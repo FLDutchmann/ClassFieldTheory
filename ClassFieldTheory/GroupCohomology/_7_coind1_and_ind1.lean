@@ -313,7 +313,8 @@ def coind₁Iso (n : ℕ) : groupCohomology ((coind₁ G).obj A) n ≅ groupCoho
 instance coind₁_trivialCohomology (A : ModuleCat R) : ((coind₁ G).obj A).TrivialCohomology := by
   refine {zero := ?_}
   intro S _ _ φ hφ n
-  have : ((coind₁ G).obj A ↓ φ) ≅ (coind₁ S).obj (ModuleCat.of R ((G ⧸ φ.range) → A)) := asIso (coind₁ResHom G A φ hφ)
+  have := coind₁ResHom_isIso G A φ hφ
+  have : ((coind₁ G).obj A ↓ φ) ≅ (coind₁ S).obj (ModuleCat.of R ((G ⧸ φ.range) → A)) := asIso (coind₁ResHom G A φ)
   have := (groupCohomology.functor (n := (n+1)) ..).mapIso this
   simp_rw [functor_obj] at this
   have := this.trans (coind₁Iso ..)
