@@ -301,7 +301,7 @@ noncomputable def coind₁ResHom {S : Type} [Group S] (φ : S →* G) :
       LinearMap.restrict_apply, LinearMap.restrict_apply]
     simp [mul_assoc]
 
-theorem cond₁ResHom_isIso {S : Type} [Group S] (φ : S →* G) (hφ : Function.Injective φ) :
+instance coind₁ResHom_isIso {S : Type} [Group S] (φ : S →* G) (hφ : Function.Injective φ) :
     IsIso (coind₁ResHom G A φ) := by
   sorry
 
@@ -312,9 +312,13 @@ def coind₁Iso (n : ℕ) : groupCohomology ((coind₁ G).obj A) n ≅ groupCoho
 
 instance coind₁_trivialCohomology (A : ModuleCat R) : ((coind₁ G).obj A).TrivialCohomology := by
   refine {zero := ?_}
-  intro H _ _ φ hφ n
-
-
+  intro S _ _ φ hφ n
+  have : ((coind₁ G).obj A ↓ φ) ≅ (coind₁ S).obj (ModuleCat.of R ((G ⧸ φ.range) → A)) := asIso (coind₁ResHom G A φ hφ)
+  have := (groupCohomology.functor (n := (n+1)) ..).mapIso this
+  simp_rw [functor_obj] at this
+  have := this.trans (coind₁Iso ..)
+  apply IsZero.of_iso _ this
+  sorry
 
   /-
   For any subgroup `S` of `G`, the restriction to `S` of `(coind₁ G).obj A` is isomorphic to
