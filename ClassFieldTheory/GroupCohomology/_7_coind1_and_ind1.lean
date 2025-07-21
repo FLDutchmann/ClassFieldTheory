@@ -264,10 +264,30 @@ variable {R} (M : Rep R G) (A : ModuleCat R)
 abbrev coind₁ : ModuleCat R ⥤ Rep R G :=
   trivialFunctor R (⊥ : Subgroup G) ⋙ coindFunctor R (⊥ : Subgroup G).subtype
 
+/-
+
+we need :
+* ((coind₁ G).obj A) ≅ (G → A (as a rep))
+* ((coind₁ G).obj A) ↓ S ≅ coind₁ S (G⧸S → A)
+Shapiro's lemma:
+
+
+https://leanprover-community.github.io/mathlib4_docs/Mathlib/RepresentationTheory/Homological/GroupCohomology/Shapiro.html#groupCohomology.coindIso-/
 /--
 Coinduced representations have trivial cohomology.
 -/
-instance coind₁_trivialCohomology (A : ModuleCat R) : ((coind₁ G).obj A).TrivialCohomology :=
+def coind₁ResHom {S : Type} [Group S] (φ : S →* G) (hφ : Function.Injective φ) :
+    (((coind₁ G).obj A) ↓ φ) ⟶ (coind₁ S).obj (ModuleCat.of R ((G ⧸ φ.range) → A)) where
+      hom := sorry
+      comm := sorry
+
+theorem cond₁ResHom_isIso {S : Type} [Group S] (φ : S →* G) (hφ : Function.Injective φ) :
+    IsIso (coind₁ResHom G A φ hφ) := by
+  sorry
+
+instance coind₁_trivialCohomology (A : ModuleCat R) : ((coind₁ G).obj A).TrivialCohomology := by
+
+
   /-
   For any subgroup `S` of `G`, the restriction to `S` of `(coind₁ G).obj A` is isomorphic to
   a direct sum of representations of the form `(coind₁ S).obj A`, one copy for each coset of `S`.
