@@ -278,6 +278,7 @@ https://leanprover-community.github.io/mathlib4_docs/Mathlib/RepresentationTheor
 /--
 Coinduced representations have trivial cohomology.
 -/
+@[simps]
 noncomputable def coind₁ResHom {S : Type} [Group S] (φ : S →* G) (sec : G ⧸ φ.range → G) :
     (((coind₁ G).obj A) ↓ φ) ⟶ (coind₁ S).obj (ModuleCat.of R ((G ⧸ φ.range) → A)) where
   hom := ofHom {
@@ -303,9 +304,49 @@ noncomputable def coind₁ResHom {S : Type} [Group S] (φ : S →* G) (sec : G �
       LinearMap.restrict_apply, LinearMap.restrict_apply]
     simp [mul_assoc]
 
-theorem coind₁ResHom_isIso {S : Type} [Group S] (φ : S →* G) (hφ : Function.Injective φ) (sec : G ⧸ φ.range → G) (hsec : ∀ g, sec g = g) :
-    IsIso (coind₁ResHom G A φ sec) := by
-  sorry
+@[simps]
+noncomputable def coind₁ResInvMap {S : Type} [Group S] (φ : S →* G) :
+    (coind₁ S).obj (ModuleCat.of R ((G ⧸ φ.range) → A)) → (((coind₁ G).obj A) ↓ φ) := fun f => by
+      refine { val := ?_ , property := ?_ }
+      · intro x
+        refine f.1 ?_ (Quot.mk _ x)
+
+        let x' : G := Quotient.out (Quot.mk (⇑(QuotientGroup.rightRel φ.range)) x)
+        let y : G := x'* x⁻¹
+        have : y ∈ φ.range := by
+          refine QuotientGroup.rightRel_apply.mp ?_
+          refine Quotient.exact' ?_
+          unfold x'
+          simp
+          rfl
+        exact Classical.choose <| MonoidHom.mem_range.1 this
+      ·
+        intro e g
+        have : (⊥ : Subgroup G).subtype e = (1 : G) := by
+          aesop
+        rw [this]
+        aesop
+
+/- maybe no need to do that fully, the composition for injectivity is useless-/
+noncomputable def coind₁ResBij {S : Type} [Group S] (φ : S →* G) :
+    (((coind₁ G).obj A) ↓ φ) ≃ (coind₁ S).obj (ModuleCat.of R ((G ⧸ φ.range) → A)) where
+      toFun := by exact (coind₁ResHom G A φ Quotient.out).hom.hom.toFun
+      invFun := coind₁ResInvMap _ _ _
+      left_inv := by
+        apply Function.leftInverse_iff_comp.mpr
+        ext x
+        simp [coind₁ResInvMap]
+        sorry
+      right_inv := by
+        apply Function.rightInverse_iff_comp.mpr
+        ext x
+        -- simp [coind₁ResHom coind₁ResInvMap]
+        sorry
+
+theorem coind₁ResHom_isIso {S : Type} [Group S] (φ : S →* G) (hφ : Function.Injective φ) :
+    IsIso (coind₁ResHom G A φ Quotient.out) := by
+    -- apply?
+    sorry
 
 def coind₁Iso (n : ℕ) : groupCohomology ((coind₁ G).obj A) n ≅ groupCohomology (trivialFunctor R (⊥ : Subgroup G) |>.obj A) n := by
   classical
@@ -317,7 +358,8 @@ instance coind₁_trivialCohomology (A : ModuleCat R) : ((coind₁ G).obj A).Tri
   refine ⟨fun Q _ _ φ hφ n ↦ ?_⟩
   -- The restriction to `Q` of `(coind₁ G).obj A` is isomorphic
   -- (after choosing coset representatives) to `(coind₁ S).obj (G ⧸ S → A)`.
-  have := coind₁ResHom_isIso G A φ hφ Quotient.out (fun _ ↦ by simp)
+  have := coind₁ResHom_isIso G A φ hφ
+    -- Quotient.out (fun _ ↦ by simp)
   have e : ((coind₁ G).obj A ↓ φ) ≅ (coind₁ Q).obj (.of R <| G ⧸ φ.range → A) :=
     asIso <| coind₁ResHom G A φ Quotient.out
   -- By Shapiro's lemma, this has trivial cohomology.
