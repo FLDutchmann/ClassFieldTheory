@@ -305,7 +305,15 @@ theorem cond₁ResHom_isIso {S : Type} [Group S] (φ : S →* G) (hφ : Function
     IsIso (coind₁ResHom G A φ) := by
   sorry
 
+def coind₁Iso (n : ℕ) : groupCohomology ((coind₁ G).obj A) n ≅ groupCohomology (trivialFunctor R (⊥ : Subgroup G) |>.obj A) n := by
+  classical
+  /- Defeq abuse? -/
+  apply groupCohomology.coindIso (trivialFunctor R (⊥ : Subgroup G) |>.obj A) n
+
 instance coind₁_trivialCohomology (A : ModuleCat R) : ((coind₁ G).obj A).TrivialCohomology := by
+  refine {zero := ?_}
+  intro H _ _ φ hφ n
+
 
 
   /-
