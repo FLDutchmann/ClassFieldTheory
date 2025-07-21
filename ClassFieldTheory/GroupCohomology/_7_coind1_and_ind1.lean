@@ -278,10 +278,10 @@ https://leanprover-community.github.io/mathlib4_docs/Mathlib/RepresentationTheor
 /--
 Coinduced representations have trivial cohomology.
 -/
-noncomputable def coind₁ResHom {S : Type} [Group S] (φ : S →* G) :
-    (((coind₁ G).obj A) ↓ φ) ⟶ (coind₁ S).obj (ModuleCat.of R ((G ⧸ φ.range) → A)) where
+noncomputable def coind₁ResHom {S : Type} [Group S] (φ : S →* G) (sec : G ⧸ φ.range → G) :
+    ((coind₁ G).obj A ↓ φ) ⟶ (coind₁ S).obj (.of R ((G ⧸ φ.range) → A)) where
   hom := ofHom {
-    toFun f := ⟨fun s r ↦ f.1 (r.out * (φ s)), by
+    toFun f := ⟨fun s r ↦ f.1 (sec r * (φ s)), by
       simp only [trivialFunctor_obj_V, coindV, Subgroup.subtype_apply, Subtype.forall,
         Subgroup.mem_bot, Submodule.mem_mk, AddSubmonoid.mem_mk, AddSubsemigroup.mem_mk,
         Set.mem_setOf_eq]
@@ -303,8 +303,9 @@ noncomputable def coind₁ResHom {S : Type} [Group S] (φ : S →* G) :
       LinearMap.restrict_apply, LinearMap.restrict_apply]
     simp [mul_assoc]
 
-instance coind₁ResHom_isIso {S : Type} [Group S] (φ : S →* G) (hφ : Function.Injective φ) :
-    IsIso (coind₁ResHom G A φ) := by
+instance coind₁ResHom_isIso {S : Type} [Group S] (φ : S →* G) (hφ : Function.Injective φ)
+    (sec : G ⧸ φ.range → G) (hsec : ∀ g, sec g = g) :
+    IsIso (coind₁ResHom G A φ sec) := by
   sorry
 
 def coind₁Iso (n : ℕ) : groupCohomology ((coind₁ G).obj A) n ≅ groupCohomology (trivialFunctor R (⊥ : Subgroup G) |>.obj A) n := by
@@ -317,9 +318,9 @@ instance coind₁_trivialCohomology (A : ModuleCat R) : ((coind₁ G).obj A).Tri
   refine ⟨fun Q _ _ φ hφ n ↦ ?_⟩
   -- The restriction to `Q` of `(coind₁ G).obj A` is isomorphic
   -- (after choosing coset representatives) to `(coind₁ S).obj (G ⧸ S → A)`.
-  have := coind₁ResHom_isIso G A φ hφ
+  have := coind₁ResHom_isIso G A φ hφ Quotient.out fun _ ↦ by simp
   have e : ((coind₁ G).obj A ↓ φ) ≅ (coind₁ Q).obj (.of R <| G ⧸ φ.range → A) :=
-    asIso <| coind₁ResHom G A φ
+    asIso <| coind₁ResHom G A φ Quotient.out
   -- By Shapiro's lemma, this has trivial cohomology.
   exact (isZero_of_trivialCohomology ..).of_iso <|
     ((groupCohomology.functor ..).mapIso e).trans (coind₁Iso ..)
