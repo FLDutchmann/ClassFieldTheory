@@ -288,8 +288,18 @@ noncomputable def coind₁ResHom {S : Type} [Group S] (φ : S →* G) (hφ : Fun
     map_add' x y := by congr
     map_smul' t x := by congr}
   comm t := by
-
-    sorry
+    simp only [Functor.comp_obj, trivialFunctor, coindFunctor_obj, Action.res_obj_V,
+      ModuleCat.of_coe, of_ρ, coindV, Subgroup.subtype_apply, trivial_apply, Action.res_obj_ρ,
+      RingHom.toMonoidHom_eq_coe, RingEquiv.toRingHom_eq_coe, MonoidHom.coe_comp, MonoidHom.coe_coe,
+      RingHom.coe_coe, Function.comp_apply]
+    ext x y g
+    simp only [ModuleCat.hom_comp, ModuleCat.hom_ofHom, LinearMap.coe_comp, LinearMap.coe_mk,
+      AddHom.coe_mk, Function.comp_apply]
+    rw [ModuleCat.endRingEquiv_symm_apply_hom, ModuleCat.endRingEquiv_symm_apply_hom]
+    -- need to check the cause of erw
+    erw [Representation.coind_apply, Representation.coind_apply,
+      LinearMap.restrict_apply, LinearMap.restrict_apply]
+    simp [mul_assoc]
 
 theorem cond₁ResHom_isIso {S : Type} [Group S] (φ : S →* G) (hφ : Function.Injective φ) :
     IsIso (coind₁ResHom G A φ hφ) := by
