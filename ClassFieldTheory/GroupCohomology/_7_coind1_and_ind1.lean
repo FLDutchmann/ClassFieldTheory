@@ -276,7 +276,7 @@ https://leanprover-community.github.io/mathlib4_docs/Mathlib/RepresentationTheor
 /--
 Coinduced representations have trivial cohomology.
 -/
-noncomputable def coind₁ResHom {S : Type} [Group S] (φ : S →* G) (hφ : Function.Injective φ) :
+noncomputable def coind₁ResHom {S : Type} [Group S] (φ : S →* G) :
     (((coind₁ G).obj A) ↓ φ) ⟶ (coind₁ S).obj (ModuleCat.of R ((G ⧸ φ.range) → A)) where
   hom := ofHom {
     toFun f := ⟨fun s r ↦ f.1 (r.out * (φ s)), by
@@ -302,7 +302,7 @@ noncomputable def coind₁ResHom {S : Type} [Group S] (φ : S →* G) (hφ : Fun
     simp [mul_assoc]
 
 theorem cond₁ResHom_isIso {S : Type} [Group S] (φ : S →* G) (hφ : Function.Injective φ) :
-    IsIso (coind₁ResHom G A φ hφ) := by
+    IsIso (coind₁ResHom G A φ) := by
   sorry
 
 instance coind₁_trivialCohomology (A : ModuleCat R) : ((coind₁ G).obj A).TrivialCohomology := by
