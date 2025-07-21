@@ -1,4 +1,5 @@
 import Mathlib
+import ClassFieldTheory.GroupCohomology._1_Basic
 import ClassFieldTheory.GroupCohomology._3_inflation
 import ClassFieldTheory.GroupCohomology._5_TrivialCohomology
 
@@ -49,6 +50,7 @@ open
   NatTrans
   ConcreteCategory
   Limits
+  groupHomology
   groupCohomology
 
 noncomputable section
@@ -311,23 +313,16 @@ def coind₁Iso (n : ℕ) : groupCohomology ((coind₁ G).obj A) n ≅ groupCoho
   apply groupCohomology.coindIso (trivialFunctor R (⊥ : Subgroup G) |>.obj A) n
 
 instance coind₁_trivialCohomology (A : ModuleCat R) : ((coind₁ G).obj A).TrivialCohomology := by
-  refine {zero := ?_}
-  intro S _ _ φ hφ n
+  -- Let `Q` be a quotient of `G`.
+  refine ⟨fun Q _ _ φ hφ n ↦ ?_⟩
+  -- The restriction to `Q` of `(coind₁ G).obj A` is isomorphic
+  -- (after choosing coset representatives) to `(coind₁ S).obj (G ⧸ S → A)`.
   have := coind₁ResHom_isIso G A φ hφ
-  have : ((coind₁ G).obj A ↓ φ) ≅ (coind₁ S).obj (ModuleCat.of R ((G ⧸ φ.range) → A)) := asIso (coind₁ResHom G A φ)
-  have := (groupCohomology.functor (n := (n+1)) ..).mapIso this
-  simp_rw [functor_obj] at this
-  have := this.trans (coind₁Iso ..)
-  apply IsZero.of_iso _ this
-  sorry
-
-  /-
-  For any subgroup `S` of `G`, the restriction to `S` of `(coind₁ G).obj A` is isomorphic to
-  a direct sum of representations of the form `(coind₁ S).obj A`, one copy for each coset of `S`.
-  It remains to show that `Hⁿ(S,(coind₁ S).obj A) ≅ 0`. By Shapiro's lemma, we have
-  `Hⁿ(S,(coind₁ S).obj A) ≅ Hⁿ(Unit,A) ≅ 0`.
-  -/
-  sorry
+  have e : ((coind₁ G).obj A ↓ φ) ≅ (coind₁ Q).obj (.of R <| G ⧸ φ.range → A) :=
+    asIso <| coind₁ResHom G A φ
+  -- By Shapiro's lemma, this has trivial cohomology.
+  exact (isZero_of_trivialCohomology ..).of_iso <|
+    ((groupCohomology.functor ..).mapIso e).trans (coind₁Iso ..)
 
 variable {G}
 
@@ -414,13 +409,15 @@ where the action of `G` is by left-translation.
 def ind₁ : ModuleCat R ⥤ Rep R G :=
   trivialFunctor R (⊥ : Subgroup G) ⋙ indFunctor R (⊥ : Subgroup G).subtype
 
-instance ind₁_trivialHomology (A : ModuleCat R) : TrivialHomology ((ind₁ G).obj A) :=
-  /-
-  Let `S` be a subgroup of `G`.
-  The restriction to `S` of `(ind₁ G).obj A` is isomorphic (after choosing coset representatives)
-  to `(ind₁ S).obj (G/S →₀ A)`. By Shapiro's lemma, this has trivial homology.
-  -/
-  sorry
+instance ind₁_trivialHomology (A : ModuleCat R) : TrivialHomology ((ind₁ G).obj A) := by
+  -- Let `S` be a subgroup of `G`.
+  refine ⟨fun S _ _ φ hφ n ↦ ?_⟩
+  -- The restriction to `S` of `(ind₁ G).obj A` is isomorphic (after choosing coset representatives)
+  -- to `(ind₁ S).obj (G ⧸ S →₀ A)`.
+  have e : ((ind₁ G).obj A ↓ φ) ≅ (ind₁ S).obj (.of R <| G ⧸ φ.range →₀ A) := sorry
+  -- By Shapiro's lemma, this has trivial homology.
+  exact (isZero_of_trivialHomology ..).of_iso <|
+    ((groupHomology.functor _ _ _).mapIso e).trans (indIso ..)
 
 @[simp] lemma ind₁_obj_ρ (A : ModuleCat R) : ((ind₁ G).obj A).ρ = Representation.ind₁ R G A := rfl
 

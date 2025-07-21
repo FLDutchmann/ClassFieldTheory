@@ -102,4 +102,10 @@ instance TrivialTateCohomology.to_trivialHomology [Finite G] {M : Rep R G}
     exact (TrivialTateCohomology.isZero _ hφ).of_iso
       (TateCohomology.isoGroupHomology n (M ↓ φ)).symm
 
+variable {R G : Type} [CommRing R] [Group G] [Subsingleton G] (M : Rep R G)
+
+instance : M.TrivialCohomology := sorry
+instance : M.TrivialHomology := sorry
+instance : M.TrivialTateCohomology := sorry
+
 end Rep
