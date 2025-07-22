@@ -304,7 +304,7 @@ noncomputable def coind₁ResHom {S : Type} [Group S] (φ : S →* G) (sec : G �
       LinearMap.restrict_apply, LinearMap.restrict_apply]
     simp [mul_assoc]
 
-@[simps]
+--@[simps]
 /- a coset decomposition of x, acording -/
 def cosetDec {S : Type } [Group S] (φ : S →* G) (sec : G ⧸ φ.range → G) (secSpec : ∀ x, sec (QuotientGroup.mk x) = x ) ( x : G ): S × (G ⧸ φ.range) := by
   refine ⟨ ?_, (QuotientGroup.mk x)⟩
@@ -318,15 +318,11 @@ def cosetDec {S : Type } [Group S] (φ : S →* G) (sec : G ⧸ φ.range → G) 
     rw [secSpec x ]
   exact Classical.choose <| MonoidHom.mem_range.1 this
 
-lemma cosetDecSpec {S : Type } [Group S] (x : G) (φ : S →* G) (sec : G ⧸ φ.range → G) (secSpec : ∀ x, sec (QuotientGroup.mk x) = x ) : let ⟨s, r⟩ := cosetDec G φ sec secSpec x; sec r * φ s = x := by
-  simp
-  --suffices φ _ = (sec x) ⁻¹ * x by sorry
-
-  --simp
-  --rw [Classical.choose_spec _]
-
-
-  sorry
+lemma cosetDecSpec {S : Type } [Group S] (x : G) (φ : S →* G) (sec : G ⧸ φ.range → G) (secSpec : ∀ x, sec (QuotientGroup.mk x) = x ) : sec (cosetDec G φ sec secSpec x).2 * φ (cosetDec G φ sec secSpec x).1 = x := by
+  apply mul_eq_of_eq_inv_mul
+  -- Lean does not infer the motive by itself
+  let p := fun z => (φ z = (sec ↑x)⁻¹ * x)
+  apply @Classical.choose_spec _ p
 
 @[simps]
 noncomputable def coind₁ResInvMap {S : Type} [Group S] (φ : S →* G) (sec : G ⧸ φ.range → G) (secSpec : ∀ x, sec (Quot.mk _ x) = x ) ( f : (coind₁ S).obj (ModuleCat.of R ((G ⧸ φ.range) → A))) : (((coind₁ G).obj A) ↓ φ) where
@@ -355,6 +351,7 @@ theorem coind₁ResHom_isIso {S : Type} [Group S] (φ : S →* G) (hφ : Functio
 
       ext x
       let ⟨s, r⟩ := cosetDec G φ sec secSpec x
+
 
 
 
