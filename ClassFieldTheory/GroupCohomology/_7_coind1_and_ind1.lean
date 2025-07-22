@@ -439,6 +439,11 @@ This map takes an element `m : M` to the constant function with value `M`.
     comm _ := by ext : 1; exact M.ρ.coind₁'_ι_comm _
   }
 
+lemma LinearEquiv.symm_apply {R S M N : Type*} [Semiring R] [Semiring S] [AddCommMonoid M]
+    [AddCommMonoid N] [Module R M] [Module S N] {σ : R →+* S} {σ' : S →+* R}
+    {re₁ : RingHomInvPair σ σ'} {re₂ : RingHomInvPair σ' σ} (e : M ≃ₛₗ[σ] N) (n : N) :
+  e.symm n = e.invFun n := rfl
+
 @[simps] def coind₁'_obj_iso_coind₁ : coind₁'.obj M ≅ (coind₁ G).obj M.V where
   hom := {
     hom := ofHom (by
@@ -457,10 +462,8 @@ This map takes an element `m : M` to the constant function with value `M`.
         MonoidHom.coe_coe, RingHom.coe_coe, Function.comp_apply, coind_apply, ModuleCat.hom_comp,
         ModuleCat.hom_ofHom, LinearMap.coe_comp, ρ_hom]
       rw [ModuleCat.endRingEquiv_symm_apply_hom, LinearMap.restrict_apply]
-      change M.ρ.coind₁'_lequiv_coind₁.invFun _ =
-        ((coind₁'.obj M).ρ g) (M.ρ.coind₁'_lequiv_coind₁.invFun f)
-      simp only [coind₁'_lequiv_coind₁, LinearEquiv.invFun_eq_symm, LinearEquiv.coe_symm_mk,
-        coind₁', Representation.coind₁', of_ρ, MonoidHom.coe_mk, OneHom.coe_mk, LinearMap.coe_mk,
+      simp only [coind₁', Representation.coind₁', coind₁'_lequiv_coind₁, LinearEquiv.coe_coe,
+        LinearEquiv.symm_apply, of_ρ, MonoidHom.coe_mk, OneHom.coe_mk, LinearMap.coe_mk,
         AddHom.coe_mk, mul_inv_rev, map_mul, Module.End.mul_apply, self_inv_apply]
       congr
   }
