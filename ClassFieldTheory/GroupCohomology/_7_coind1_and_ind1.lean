@@ -450,7 +450,19 @@ This map takes an element `m : M` to the constant function with value `M`.
   }
   inv := {
     hom := ofHom M.ρ.coind₁'_lequiv_coind₁.symm.toLinearMap
-    comm g := sorry
+    comm g := by
+      ext f
+      simp only [Functor.comp_obj, coindFunctor_obj, trivialFunctor_obj_V,
+        RingHom.toMonoidHom_eq_coe, RingEquiv.toRingHom_eq_coe, MonoidHom.coe_comp,
+        MonoidHom.coe_coe, RingHom.coe_coe, Function.comp_apply, coind_apply, ModuleCat.hom_comp,
+        ModuleCat.hom_ofHom, LinearMap.coe_comp, ρ_hom]
+      rw [ModuleCat.endRingEquiv_symm_apply_hom, LinearMap.restrict_apply]
+      change M.ρ.coind₁'_lequiv_coind₁.invFun _ =
+        ((coind₁'.obj M).ρ g) (M.ρ.coind₁'_lequiv_coind₁.invFun f)
+      simp only [coind₁'_lequiv_coind₁, LinearEquiv.invFun_eq_symm, LinearEquiv.coe_symm_mk,
+        coind₁', Representation.coind₁', of_ρ, MonoidHom.coe_mk, OneHom.coe_mk, LinearMap.coe_mk,
+        AddHom.coe_mk, mul_inv_rev, map_mul, Module.End.mul_apply, self_inv_apply]
+      congr
   }
   hom_inv_id := by ext; simp
   inv_hom_id := by ext; simp
