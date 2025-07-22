@@ -350,26 +350,26 @@ noncomputable def coind₁ResInvMap {S : Type} [Group S] (φ : S →* G) (sec : 
 
 theorem coind₁ResHom_isIso {S : Type} [Group S] (φ : S →* G) (hφ : Function.Injective φ) (sec : G ⧸ φ.range → G) (secSpec : ∀ x, QuotientGroup.mk (sec x) = x ) :
     IsIso (coind₁ResHom G A φ sec) := by
-    apply (CategoryTheory.isIso_iff_mono_and_epi _).2
-    constructor
-    · rw [Rep.mono_iff_injective, ← LinearMap.ker_eq_bot, Submodule.eq_bot_iff]
-      intro g hg
-      simp only [Functor.comp_obj, coindFunctor_obj, Action.res_obj_V, trivialFunctor_obj_V,
-        coind₁ResHom_hom, ModuleCat.hom_ofHom, LinearMap.mem_ker, LinearMap.coe_mk, AddHom.coe_mk,
-        Submodule.mk_eq_zero] at hg
-      simp only [Functor.comp_obj, coindFunctor_obj, Action.res_obj_V, trivialFunctor_obj_V] at g
-      apply Submodule.coe_eq_zero.mp
-      ext x
-      let ⟨s, r⟩ := cosetDec G φ sec secSpec x
-      rw [← cosetDecSpec G φ sec secSpec x]
-      exact congrFun₂ hg _ _
-    · simp only [Functor.comp_obj, coindFunctor_obj, epi_iff_surjective, Action.res_obj_V,
-        trivialFunctor_obj_V, coind₁ResHom_hom, ModuleCat.hom_ofHom, LinearMap.coe_mk, AddHom.coe_mk]
-      intro x
-      use coind₁ResInvMap G A φ sec secSpec x
-      simp only [coind₁ResInvMap_coe, trivialFunctor_obj_V, ← Subtype.val_inj]
-      ext s r
-      rw [cosetDec_inj G φ sec hφ]
+  apply (CategoryTheory.isIso_iff_mono_and_epi _).2
+  constructor
+  · rw [Rep.mono_iff_injective, ← LinearMap.ker_eq_bot, Submodule.eq_bot_iff]
+    intro g hg
+    simp only [Functor.comp_obj, coindFunctor_obj, Action.res_obj_V, trivialFunctor_obj_V,
+      coind₁ResHom_hom, ModuleCat.hom_ofHom, LinearMap.mem_ker, LinearMap.coe_mk, AddHom.coe_mk,
+      Submodule.mk_eq_zero] at hg
+    simp only [Functor.comp_obj, coindFunctor_obj, Action.res_obj_V, trivialFunctor_obj_V] at g
+    apply Submodule.coe_eq_zero.mp
+    ext x
+    let ⟨s, r⟩ := cosetDec G φ sec secSpec x
+    rw [← cosetDecSpec G φ sec secSpec x]
+    exact congrFun₂ hg _ _
+  · simp only [Functor.comp_obj, coindFunctor_obj, epi_iff_surjective, Action.res_obj_V,
+      trivialFunctor_obj_V, coind₁ResHom_hom, ModuleCat.hom_ofHom, LinearMap.coe_mk, AddHom.coe_mk]
+    intro x
+    use coind₁ResInvMap G A φ sec secSpec x
+    simp only [coind₁ResInvMap_coe, trivialFunctor_obj_V, ← Subtype.val_inj]
+    ext s r
+    rw [cosetDec_inj G φ sec hφ]
 
 def coind₁Iso (n : ℕ) : groupCohomology ((coind₁ G).obj A) n ≅ groupCohomology (trivialFunctor R (⊥ : Subgroup G) |>.obj A) n := by
   classical
@@ -384,6 +384,7 @@ instance coind₁_trivialCohomology (A : ModuleCat R) : ((coind₁ G).obj A).Tri
   have := coind₁ResHom_isIso G A φ hφ
     -- Quotient.out (fun _ ↦ by simp)
   have e : ((coind₁ G).obj A ↓ φ) ≅ (coind₁ Q).obj (.of R <| G ⧸ φ.range → A) :=
+    have := coind₁ResHom_isIso G A φ hφ Quotient.out (fun x ↦ QuotientGroup.out_eq' x)
     asIso <| coind₁ResHom G A φ Quotient.out
   -- By Shapiro's lemma, this has trivial cohomology.
   exact (isZero_of_trivialCohomology ..).of_iso <|
