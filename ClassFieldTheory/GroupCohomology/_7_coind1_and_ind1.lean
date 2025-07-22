@@ -304,31 +304,29 @@ noncomputable def coind₁ResHom {S : Type} [Group S] (φ : S →* G) (sec : G �
       LinearMap.restrict_apply, LinearMap.restrict_apply]
     simp [mul_assoc]
 
---@[simps]
+@[simps]
 /- a coset decomposition of x, acording -/
-def cosetDec {S : Type } [Group S] (φ : S →* G) (sec : G ⧸ φ.range → G) (secSpec : ∀ x, sec (QuotientGroup.mk x) = x ) ( x : G ): S × (G ⧸ φ.range) := by
+def cosetDec {S : Type } [Group S] (φ : S →* G) (sec : G ⧸ φ.range → G) (secSpec : ∀ x, QuotientGroup.mk (sec x) = x ) ( x : G ) : S × (G ⧸ φ.range) := by
   refine ⟨ ?_, (QuotientGroup.mk x)⟩
 
   let x' : G := sec (QuotientGroup.mk x : G ⧸ φ.range)
   let y : G := x'⁻¹ * x
   have : y ∈ φ.range := by
-    refine QuotientGroup.leftRel_apply.mp ?_
-    refine Quotient.exact' ?_
-    unfold x'
-    rw [secSpec x ]
+    apply QuotientGroup.leftRel_apply.mp
+    exact Quotient.eq''.mp (secSpec ↑x)
   exact Classical.choose <| MonoidHom.mem_range.1 this
 
-lemma cosetDecSpec {S : Type } [Group S] (x : G) (φ : S →* G) (sec : G ⧸ φ.range → G) (secSpec : ∀ x, sec (QuotientGroup.mk x) = x ) : sec (cosetDec G φ sec secSpec x).2 * φ (cosetDec G φ sec secSpec x).1 = x := by
+
+lemma cosetDecSpec {S : Type } [Group S] (φ : S →* G) (sec : G ⧸ φ.range → G) (secSpec : ∀ x, QuotientGroup.mk (sec x) = x ) ( x : G) : sec (cosetDec G φ sec secSpec x).2 * φ (cosetDec G φ sec secSpec x).1 = x := by
   apply mul_eq_of_eq_inv_mul
   -- Lean does not infer the motive by itself
   let p := fun z => (φ z = (sec ↑x)⁻¹ * x)
   apply @Classical.choose_spec _ p
 
 @[simps]
-noncomputable def coind₁ResInvMap {S : Type} [Group S] (φ : S →* G) (sec : G ⧸ φ.range → G) (secSpec : ∀ x, sec (Quot.mk _ x) = x ) ( f : (coind₁ S).obj (ModuleCat.of R ((G ⧸ φ.range) → A))) : (((coind₁ G).obj A) ↓ φ) where
+noncomputable def coind₁ResInvMap {S : Type} [Group S] (φ : S →* G) (sec : G ⧸ φ.range → G) (secSpec : ∀ x, QuotientGroup.mk (sec x) = x ) ( f : (coind₁ S).obj (ModuleCat.of R ((G ⧸ φ.range) → A))) : (((coind₁ G).obj A) ↓ φ) where
   val := fun x =>
     let ⟨s, r⟩ := cosetDec G φ sec secSpec x; f.1 s r
-
   property := by
     intro e g
     have : (⊥ : Subgroup G).subtype e = (1 : G) := by
@@ -337,7 +335,7 @@ noncomputable def coind₁ResInvMap {S : Type} [Group S] (φ : S →* G) (sec : 
     rw [this, one_mul]
     aesop
 
-theorem coind₁ResHom_isIso {S : Type} [Group S] (φ : S →* G) (hφ : Function.Injective φ) (sec : G ⧸ φ.range → G) (secSpec : ∀ x, sec (Quot.mk _ x) = x ) :
+theorem coind₁ResHom_isIso {S : Type} [Group S] (φ : S →* G) (hφ : Function.Injective φ) (sec : G ⧸ φ.range → G) (secSpec : ∀ x, QuotientGroup.mk (sec x) = x ) :
     IsIso (coind₁ResHom G A φ sec) := by
     apply (CategoryTheory.isIso_iff_mono_and_epi _).2
     constructor
@@ -351,6 +349,8 @@ theorem coind₁ResHom_isIso {S : Type} [Group S] (φ : S →* G) (hφ : Functio
 
       ext x
       let ⟨s, r⟩ := cosetDec G φ sec secSpec x
+      rw [← cosetDecSpec G φ sec secSpec x ]
+      dsimp
 
 
 
