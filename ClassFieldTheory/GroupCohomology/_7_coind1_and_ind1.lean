@@ -352,14 +352,13 @@ theorem coind₁ResHom_isIso {S : Type} [Group S] (φ : S →* G) (hφ : Functio
     IsIso (coind₁ResHom G A φ sec) := by
     apply (CategoryTheory.isIso_iff_mono_and_epi _).2
     constructor
-    · apply (Rep.mono_iff_injective _ ).2
-      apply LinearMap.ker_eq_bot.mp
-      apply LinearMap.ker_eq_bot'.mpr
+    · rw  [Rep.mono_iff_injective, ← LinearMap.ker_eq_bot, Submodule.eq_bot_iff]
       intro g hg
-      simp at hg
-      simp at g
+      simp only [Functor.comp_obj, coindFunctor_obj, Action.res_obj_V, trivialFunctor_obj_V,
+        coind₁ResHom_hom, ModuleCat.hom_ofHom, LinearMap.mem_ker, LinearMap.coe_mk, AddHom.coe_mk,
+        Submodule.mk_eq_zero] at hg
+      simp only [Functor.comp_obj, coindFunctor_obj, Action.res_obj_V, trivialFunctor_obj_V] at g
       apply Submodule.coe_eq_zero.mp
-
       ext x
       let ⟨s, r⟩ := cosetDec G φ sec secSpec x
       rw [← cosetDecSpec G φ sec secSpec x ]
