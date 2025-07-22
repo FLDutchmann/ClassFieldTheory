@@ -323,6 +323,19 @@ lemma cosetDecSpec {S : Type } [Group S] (φ : S →* G) (sec : G ⧸ φ.range �
   let p := fun z => (φ z = (sec ↑x)⁻¹ * x)
   apply @Classical.choose_spec _ p
 
+lemma cosetDec_inj {S : Type } [Group S] (φ : S →* G) (sec : G ⧸ φ.range → G) (inj : Function.Injective φ)
+    (secSpec : ∀ x, QuotientGroup.mk (sec x) = x ) (s : S) (r : G ⧸ φ.range) :
+    cosetDec G φ sec secSpec (sec r * φ s) = (s, r) := by
+  have eq2 : (cosetDec G φ sec secSpec (sec r * φ s)).2 = r := by
+    calc
+    _ = QuotientGroup.mk (sec r * φ s) := by simp [secSpec]
+    _ = r := by simp [secSpec]
+  have := cosetDecSpec G φ sec secSpec (sec r * φ s)
+  simp only [eq2, mul_right_inj] at this
+  ext
+  · exact inj this
+  · exact eq2
+
 @[simps]
 noncomputable def coind₁ResInvMap {S : Type} [Group S] (φ : S →* G) (sec : G ⧸ φ.range → G) (secSpec : ∀ x, QuotientGroup.mk (sec x) = x ) ( f : (coind₁ S).obj (ModuleCat.of R ((G ⧸ φ.range) → A))) : (((coind₁ G).obj A) ↓ φ) where
   val := fun x =>
@@ -358,7 +371,13 @@ theorem coind₁ResHom_isIso {S : Type} [Group S] (φ : S →* G) (hφ : Functio
 
 
       sorry
-    · sorry
+    · simp only [Functor.comp_obj, coindFunctor_obj, epi_iff_surjective, Action.res_obj_V,
+        trivialFunctor_obj_V, coind₁ResHom_hom, ModuleCat.hom_ofHom, LinearMap.coe_mk, AddHom.coe_mk]
+      intro x
+      use coind₁ResInvMap G A φ sec secSpec x
+      simp only [coind₁ResInvMap_coe, trivialFunctor_obj_V, ← Subtype.val_inj]
+      ext s r
+      rw [cosetDec_inj G φ sec hφ]
 
 def coind₁Iso (n : ℕ) : groupCohomology ((coind₁ G).obj A) n ≅ groupCohomology (trivialFunctor R (⊥ : Subgroup G) |>.obj A) n := by
   classical
