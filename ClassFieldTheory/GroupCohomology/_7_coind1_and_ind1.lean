@@ -95,6 +95,11 @@ lemma ind₁_apply (g x : G) : (ind₁ R G V) g ∘ₗ Ind₁V.mk R G V x = Ind�
 
 variable {R G V} (ρ : Representation R G V)
 
+@[simps] def ind₁AsFinsup : Representation R G (G →₀ V) where
+  toFun g := mapRange.linearMap (ρ g)
+  map_one' := by ext; simp
+  map_mul' _ _ := by ext; simp
+
 /--
 Given a representation `ρ` of `G` on `V`, `coind₁' ρ` is the representation of `G`
 on `G → V`, where the action of `G` is `(g f) x = ρ g (f (x * g))`.
@@ -509,6 +514,16 @@ def ind₁' : Rep R G ⥤ Rep R G where
   map_comp _ _ := by
     ext : 2
     exact mapRange.linearMap_comp _ _
+
+@[simps! V] def ind₁AsFinsupp : Rep R G  :=
+  ind₁'.obj
+    ((trivialFunctor R G).obj (ModuleCat.of R <| G →₀ A))
+
+def ind₁AsFinssuppIso {S : Type} [Group S] (φ : S →* G) (hφ : Function.Injective φ) : ind₁AsFinsupp A ≅ ind₁AsFinsupp (G := S) (.of R (G ⧸ φ.range →₀ A)) where
+  hom := sorry
+  inv := sorry
+  hom_inv_id := sorry
+  inv_hom_id := sorry
 
 /--
 The natural projection `ind₁'.obj M ⟶ M`, which takes `f : G →₀ M.V` to the sum of the
