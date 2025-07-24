@@ -111,9 +111,64 @@ lemma ind₁'_π_comp_map₂ :
   rw [LinearMap.comp_assoc, map₂_comp_lsingle, LinearMap.comp_sub,
     LinearMap.zero_comp, sub_eq_zero, ind₁'_π_comp_lsingle, ind₁'_π_comp_lsingle]
 
+omit [DecidableEq G] in
+lemma npowIsSurjective (x : G) : ∃ n : Fin (Nat.card G) , (gen G) ^ n.1 = x := by
+  let n := (IsCyclic.exists_generator.choose_spec x).choose
+  let hn : (gen G) ^ n = x := (IsCyclic.exists_generator.choose_spec x).choose_spec
+
+  let n' : ℤ  := ( n % Nat.card G )
+
+  have : 0 < Nat.card G := by
+    exact @Nat.card_pos _ (Nonempty.intro x) _
+
+  have isPosN': 0 ≤ ( n % Nat.card G ) := by
+    apply Int.emod_nonneg n
+    apply Int.natCast_ne_zero_iff_pos.mpr this
+
+  use ⟨( n % Nat.card G ).toNat, ?_⟩
+  · have : ((n % ↑(Nat.card G)).toNat : ℤ) = (n % ↑(Nat.card G)) := by
+      exact Int.toNat_of_nonneg isPosN'
+    have : gen G ^ (n % ↑(Nat.card G)).toNat = gen G ^ (n % ↑(Nat.card G)) := by
+      calc gen G ^ (n % ↑(Nat.card G)).toNat = gen G ^ ((n % ↑(Nat.card G)).toNat : ℤ) := by
+            exact Eq.symm (zpow_natCast (gen G) (n % ↑(Nat.card G)).toNat)
+          _ = gen G ^ (n % ↑(Nat.card G)) := by rw [this]
+
+    rw [← hn, this]
+    exact zpow_mod_natCard (gen G) n
+  · simp only [Nat.card_pos, Int.toNat_lt']
+    exact Int.emod_lt_of_pos ((IsCyclic.exists_generator.choose_spec x).choose) <| Int.natCast_pos.mpr (@Nat.card_pos _ (Nonempty.intro x) _)
+
+
+
 lemma map₂_range :
-    LinearMap.range (map₂ (R := R) (G := G) (A := A)) = LinearMap.ker ind₁'_π :=
-  sorry
+    LinearMap.range (map₂ (R := R) (G := G) (A := A)) = LinearMap.ker ind₁'_π := by
+  ext f
+  constructor
+  · intro hf
+    apply LinearMap.mem_ker.mpr
+
+    let f' := Classical.choose (LinearMap.mem_range.1 hf)
+    let hf' : map₂ f' = f :=  Classical.choose_spec (LinearMap.mem_range.1 hf)
+
+    suffices (ind₁'_π ∘ₗ map₂ (R := R) (G := G) (A := A)).toFun f' = 0 by
+      rw [← hf', ← this]
+      simp
+    rw [ind₁'_π_comp_map₂]
+    simp
+  · intro hf
+    apply LinearMap.mem_range.2
+
+    have y' : Fin (Nat.card G) → A := fun r => ∑ i ∈ Finset.range r.1 , (f.toFun <| (gen G) ^ i)
+    have y : G → A := fun x => y' (npowIsSurjective x).choose
+
+    use Finsupp.equivFunOnFinite.invFun y
+    ext x
+    simp [map₂, mapDomain]
+    let n := (npowIsSurjective x).choose
+    let hn : (gen G) ^ n.1 = x := (npowIsSurjective x).choose_spec
+    rw [← hn]
+    simp
+    sorry
 
 end Representation
 
