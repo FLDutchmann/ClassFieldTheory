@@ -39,6 +39,19 @@ We prove that `ind₁'.obj M` is isomorphic to `(ind₁ G).obj M.V`, and therefo
 Similarly we show that `coind₁'.obj M` is isomorphic to `(coind₁ G).obj M.V` and therefore has
 trivial cohomology. In the case that `G` is a finite group, we show that all four of these
 repressentations have trivial Tate cohomology.
+
+## Implementation notes
+
+`ind₁`/`coind₁` are defined as the base change of finsupp/pi quotiented out by the trivial
+relation.
+This is because they are abbrevs of the general construction from mathlib.
+
+Instead of redefining them as `G →₀ A`/`G → A` with the `G`-action on the domain, which would break
+the defeq with the general construction, we provide `ind₁AsFinsupp`/`coind₁AsPi`, a version of
+`ind₁`/`coind₁` that's actually defined as `G →₀ A`/`G → A`.
+
+`ind₁AsFinsupp`/`coind₁AsPi` are not bundled as functors because they should only be used for
+pointwise computations.
 -/
 
 open
@@ -294,7 +307,7 @@ The `H`-invariants of `(coind₁ G).obj A` form an representation of `G ⧸ H` w
 -/
 instance coind₁_quotientToInvariants_trivialCohomology (A : ModuleCat R) {Q : Type} [Group Q]
     {φ : G →* Q} (surj : Function.Surjective φ) :
-    ((coind₁ G ⋙ quotientToInvariantsFunctor surj).obj A).TrivialCohomology :=
+    ((coind₁ G ⋙ quotientToInvariantsFunctor' surj).obj A).TrivialCohomology :=
   .of_iso (Rep.coind₁_quotientToInvariants_iso A surj)
 
 /--
@@ -302,6 +315,7 @@ The functor which takes a representation `ρ` of `G` on `V` to the
 coinduced representation on `G → V`, where the action of `G` is by `ρ` in `V` and by
 right translation on `G`.
 -/
+@[simps obj]
 def coind₁' : Rep R G ⥤ Rep R G where
   obj M := of M.ρ.coind₁'
   map φ := {
@@ -347,8 +361,8 @@ instance coind₁'_trivialCohomology : (coind₁'.obj M).TrivialCohomology :=
 
 instance coind₁'_quotientToInvariants_trivialCohomology {Q : Type} [Group Q] {φ : G →* Q}
     (surj : Function.Surjective φ) : ((coind₁'.obj M) ↑ surj).TrivialCohomology := by
-  have iso := (quotientToInvariantsFunctor surj).mapIso (coind₁'_obj_iso_coind₁ M)
-  have _ : ((quotientToInvariantsFunctor surj).obj ((coind₁ G).obj M.V)).TrivialCohomology
+  have iso := (quotientToInvariantsFunctor' surj).mapIso (coind₁'_obj_iso_coind₁ M)
+  have _ : ((quotientToInvariantsFunctor' surj).obj ((coind₁ G).obj M.V)).TrivialCohomology
   · exact coind₁_quotientToInvariants_trivialCohomology M.V surj
   exact .of_iso iso
 
@@ -378,6 +392,7 @@ The functor taking a representation `M` of `G` to the induced representation on
 the space `G →₀ M`. The action of `G` on `G →₀ M.V` is by left-translation on `G` and
 by `M.ρ` on `M.V`.
 -/
+@[simps! obj]
 def ind₁' : Rep R G ⥤ Rep R G where
   obj M := of M.ρ.ind₁'
   map f := {
@@ -417,7 +432,7 @@ instance : Epi (ind₁'_π.app M) :=
 
 lemma ind₁'_obj_ρ_apply (g : G) : (ind₁'.obj M).ρ g = M.ρ.ind₁' g := rfl
 
-def ind₁'_obj_iso : ind₁'.obj M ≅ (ind₁ G).obj M.V where
+def ind₁'_obj_iso_ind₁ : ind₁'.obj M ≅ (ind₁ G).obj M.V where
   hom := ofHom {
       val := M.ρ.ind₁'_lequiv.toLinearMap
       property g := by
@@ -435,7 +450,38 @@ def ind₁'_obj_iso : ind₁'.obj M ≅ (ind₁ G).obj M.V where
 
 instance ind₁'_trivialHomology : TrivialHomology (ind₁'.obj M) :=
   let _ := (ind₁_trivialHomology G M.V)
-  .of_iso (ind₁'_obj_iso M)
+  .of_iso (ind₁'_obj_iso_ind₁ M)
+
+variable (G) in
+/-- A version of `ind₁` that's actually defined as `G →₀ A` with some action. -/
+@[simps! V] def ind₁AsFinsupp : Rep R G := ind₁'.obj <| (trivialFunctor R G).obj A
+
+variable (G) in
+/-- A version of `coind₁` that's actually defined as `G → A` with some action. -/
+@[simps! V] def coind₁AsPi : Rep R G := coind₁'.obj <| (trivialFunctor R G).obj A
+
+@[simp]
+lemma ind₁AsFinsupp_ρ (g : G) : (ind₁AsFinsupp G A).ρ g = lmapDomain _ _ (fun x ↦ x * g⁻¹) := by
+  simp [ind₁AsFinsupp, trivialFunctor]
+
+-- TODO: Replace with `coind₁AsPi_ρ`. Currently can't be proved first for obscure reasons.
+@[simp]
+lemma coind₁AsPi_ρ_apply (g : G) (f : G → A) (x : G) : (coind₁AsPi G A).ρ g f x = f (x * g) := by
+  simp [coind₁AsPi, coind₁', trivialFunctor]
+
+@[simp]
+lemma coind₁AsPi_ρ (g : G) :
+    (coind₁AsPi G A).ρ g = (LinearEquiv.piCongrLeft R (fun _ ↦ A) <| (Equiv.mulRight g).symm).toLinearMap := by
+  simp only [coind₁AsPi_V]
+  ext f x
+  erw [coind₁AsPi_ρ_apply]
+  simp [LinearEquiv.piCongrLeft]
+
+/-- `ind₁AsFinsupp` is isomorphic to `ind₁` pointwise. -/
+def ind₁AsFinsuppIso : ind₁AsFinsupp G A ≅ (ind₁ G).obj A := ind₁'_obj_iso_ind₁ _
+
+/-- `coind₁AsPi` is isomorphic to `coind₁` pointwise. -/
+def coind₁AsPiIso : coind₁AsPi G A ≅ (coind₁ G).obj (.of R A) := coind₁'_obj_iso_coind₁ _
 
 section FiniteGroup
 
@@ -480,7 +526,7 @@ instance ind₁_trivialCohomology [Finite G] : TrivialCohomology ((ind₁ G).obj
   .of_iso (ind₁_obj_iso_coind₁_obj A)
 
 instance ind₁'_trivialCohomology [Finite G] : TrivialCohomology (ind₁'.obj M) :=
-  .of_iso (ind₁'_obj_iso M)
+  .of_iso (ind₁'_obj_iso_ind₁ M)
 
 instance coind₁_trivialHomology [Finite G] : TrivialHomology ((coind₁ G).obj A) :=
   .of_iso (ind₁_obj_iso_coind₁_obj A).symm
@@ -488,15 +534,77 @@ instance coind₁_trivialHomology [Finite G] : TrivialHomology ((coind₁ G).obj
 instance coind₁'_trivialHomology [Finite G] : TrivialHomology (coind₁'.obj M) :=
   .of_iso (coind₁'_obj_iso_coind₁ M)
 
-instance ind₁_trivialTateCohomology [Finite G] : TrivialTateCohomology ((ind₁ G).obj A) := sorry
+instance ind₁_trivialtateCohomology [Finite G] : TrivialtateCohomology ((ind₁ G).obj A) := sorry
 
-instance coind₁_trivialTate [Finite G] : TrivialTateCohomology ((coind₁ G).obj A) :=
+instance coind₁_trivialTate [Finite G] : TrivialtateCohomology ((coind₁ G).obj A) :=
   .of_iso (ind₁_obj_iso_coind₁_obj A).symm
 
-instance coind₁'_trivialTate [Finite G] : TrivialTateCohomology (coind₁'.obj M) :=
+instance coind₁'_trivialTate [Finite G] : TrivialtateCohomology (coind₁'.obj M) :=
   .of_iso (coind₁'_obj_iso_coind₁ M)
 
-instance ind₁'_trivialTate [Finite G] : TrivialTateCohomology (ind₁'.obj M) :=
+instance ind₁'_trivialTate [Finite G] : TrivialtateCohomology (ind₁'.obj M) :=
   .of_iso (ind₁'_iso_coind₁'.app M)
 
 end FiniteGroup
+
+namespace AlgEquiv
+variable {R A : Type*} [CommSemiring R] [Semiring A] [Algebra R A]
+
+@[simp] lemma apply_inv_self (e : A ≃ₐ[R] A) (x : A) : e (e⁻¹ x) = x := e.toEquiv.apply_symm_apply _
+@[simp] lemma inv_apply_self (e : A ≃ₐ[R] A) (x : A) : e⁻¹ (e x) = x := e.toEquiv.symm_apply_apply _
+
+end AlgEquiv
+
+-- Sorried version of normal basis theorem, see mathlib PR #27390
+namespace IsGalois
+
+open scoped CategoryTheory
+open scoped TensorProduct
+
+variable (K L : Type) [Field K] [Field L] [Algebra K L] [IsGalois K L] [FiniteDimensional K L]
+
+/-- Given a finite Galois extension `L/K`, `normalBasis K L` is a basis of `L` over `K`
+that is an orbit under the Galois group action. -/
+noncomputable def normalBasis : Basis (L ≃ₐ[K] L) K L := sorry
+
+variable {K L}
+
+theorem normalBasis_apply (e : L ≃ₐ[K] L) : normalBasis K L e = e (normalBasis K L 1) := sorry
+
+/-- For a finite Galois extension `L/K`, the isomorphism between `ind₁` of `K`
+and `L` in the category of `(L ≃ₐ[K] L)`-representations. -/
+noncomputable def iso_ind₁ :
+    (Rep.ind₁ (L ≃ₐ[K] L)).obj (.of K K) ≅ Rep.of (AlgEquiv.toLinearMapHom K L) := by
+  refine (Rep.ind₁AsFinsuppIso (G := (L ≃ₐ[K] L)) (.of K K)).symm ≪≫
+    Action.mkIso (LinearEquiv.toModuleIso
+      ((IsGalois.normalBasis K L).reindex (Equiv.inv (L ≃ₐ[K] L))).repr.symm) ?_
+  intro x
+  ext f
+  simp only [Rep.ind₁AsFinsupp_V, Rep.trivialFunctor_obj_V, LinearEquiv.toModuleIso_hom,
+    Basis.coe_repr_symm, Basis.coe_reindex, Equiv.inv_symm, Equiv.inv_apply, ModuleCat.hom_comp,
+    ModuleCat.hom_ofHom, LinearMap.coe_comp, Function.comp_apply, RingHom.toMonoidHom_eq_coe,
+    RingEquiv.toRingHom_eq_coe, MonoidHom.coe_comp, MonoidHom.coe_coe, RingHom.coe_coe,
+    AlgEquiv.toLinearMapHom_apply]
+  rw [Finsupp.linearCombination_apply, Finsupp.linearCombination_apply, 
+    Finsupp.sum_fintype _ _ (fun i => by exact zero_smul K _),
+    Finsupp.sum_fintype _ _ (fun i => by exact zero_smul K _)]
+  -- For strange reasons, the simp lemma `ind₁AsFinsupp_ρ` doesn't work here, so
+  -- we unfold instead.
+  unfold Rep.ind₁AsFinsupp
+  simp only [Rep.ind₁'_obj, Rep.trivialFunctor_obj_V, RingHom.toMonoidHom_eq_coe,
+    RingEquiv.toRingHom_eq_coe, MonoidHom.coe_comp, MonoidHom.coe_coe, RingHom.coe_coe,
+    Function.comp_apply, Representation.ind₁'_apply, map_sum, map_smul]
+  unfold ModuleCat.endRingEquiv
+  simp only [RingEquiv.symm_mk, RingEquiv.coe_mk, Equiv.coe_fn_mk, ModuleCat.ofHom_comp,
+    ModuleCat.hom_comp, ModuleCat.hom_ofHom, LinearMap.coe_comp, Function.comp_apply,
+    Finsupp.mapRange.linearMap_apply, Finsupp.lmapDomain_apply]
+  apply Fintype.sum_equiv (Equiv.mulRight x)
+  intro y
+  rw [Finsupp.mapDomain_mapRange _ _ _ _ (fun _ _ => rfl), Finsupp.mapRange_apply]
+  simp only [Equiv.coe_mulRight, mul_inv_rev]
+  rw [IsGalois.normalBasis_apply y⁻¹, IsGalois.normalBasis_apply (x⁻¹ * y⁻¹)]
+  simp only [AlgEquiv.mul_apply, AlgEquiv.toLinearMap_apply, AlgEquiv.apply_inv_self]
+  congr 1
+  change Finsupp.mapDomain (Equiv.mulRight x).symm _ _ = _
+  rw [← Finsupp.equivMapDomain_eq_mapDomain, Finsupp.equivMapDomain_apply]
+  simp only [Equiv.mulRight_symm, inv_inv, Equiv.coe_mulRight]
