@@ -224,6 +224,85 @@ instance coind₁_trivialTateCohomology [Finite G] [DecidableEq G] : TrivialTate
         convert (this (x⁻¹ * ⟦x⟧.out) ?_ x).symm
         · simp
         · apply (h_aux _).mpr rfl
+  · refine IsZero.of_iso ?_ (tateCohomology.negOneIso _)
+    convert @ModuleCat.isZero_of_subsingleton _ _ _ ?_
+    apply Submodule.subsingleton_quotient_iff_eq_top.mpr
+    rw [Submodule.submoduleOf]
+    apply SetLike.coe_injective
+    simp_rw [Submodule.comap_coe, Submodule.coe_subtype, Submodule.top_coe,
+      Set.preimage_eq_univ_iff, Subtype.range_coe_subtype, LinearMap.mem_ker]
+    intro (f : G → M.V) (hf : (coind₁'.obj M ↓ φ).ρ.norm f = (0 : G → M.V))
+    replace hf := fun g ↦ congrFun hf g
+    simp_rw [Representation.norm, res_ρ_apply, coind₁', of_ρ,
+      Representation.coind₁', Pi.zero_apply, Action.res_obj_V, MonoidHom.coe_mk,
+      OneHom.coe_mk, LinearMap.coeFn_sum, LinearMap.coe_mk, AddHom.coe_mk, Finset.sum_apply] at hf
+
+    -- Testing playground (should comment out)
+    have f'_parts : (G ⧸ φ.range) → H → (G → M.V) := sorry
+    let f'_sum : G → M.V := ∑ g, ∑ h, f'_parts g h
+    have h : H := sorry
+    apply Coinvariants.mem_ker_of_eq h f'_sum f ?_
+    ext g
+    simp [coind₁', Representation.coind₁', f'_sum]
+    sorry
+
+    -- "The sum of the values of f over each coset of H is zero"
+    -- have h_coset (g : G ⧸ φ.range) : ∑ s : H, ∑ c, (M.ρ (φ s)) (f (g * φ s)) = 0
+    -- f g = (M.ρ (φ h)) (f' (g * φ h)) - f' g
+    -- This isn't correct right now lol
+    have :
+        f = ∑ g : G ⧸ φ.range, ∑ s : H,
+          (Pi.single (g.out * φ s) ((M.ρ (φ s)) (f g.out))
+            - Pi.single g.out ((M.ρ (φ s)⁻¹) (f (g.out * (φ s)⁻¹)))) := by
+      simp_rw [Finset.sum_sub_distrib]
+      convert (sub_zero f).symm
+      · rw [← Finset.sum_product', Finset.univ_product_univ]
+        ext w
+        have h_aux (g : G ⧸ φ.range) : w⁻¹ * g.out ∈ Set.range φ ↔ ⟦w⟧ = g := by
+          change w⁻¹ * g.out ∈ φ.range ↔ _
+          constructor <;> intro h
+          · apply Quotient.mk_eq_iff_out.mpr (_ : QuotientGroup.leftRel _ _ _)
+            rwa [QuotientGroup.leftRel_apply]
+          · subst h
+            rw [← Subgroup.inv_mem_iff, mul_inv_rev, inv_inv, ← QuotientGroup.leftRel_apply]
+            apply Quotient.mk_out
+        have h_iff (x : (G ⧸ φ.range) × H) :
+            w = x.fst.out * φ x.snd ↔ x = (⟦w⟧, ((h_aux ⟦w⟧).mpr rfl).choose⁻¹) := by
+          constructor <;> rintro rfl
+          · have h_quo : ⟦x.fst.out * φ x.snd⟧ = x.fst := by
+              apply Quotient.mk_eq_iff_out.mpr (_ : QuotientGroup.leftRel _ _ _)
+              rw [QuotientGroup.leftRel_apply, mul_inv_rev, mul_assoc, inv_mul_cancel,
+                mul_one, ← map_inv]
+              use x.snd⁻¹
+            ext <;> simp only
+            · exact h_quo.symm
+            · apply hφ
+              simp_rw [map_inv, ((h_aux ⟦x.fst.out * φ x.snd⟧).mpr rfl).choose_spec,
+                h_quo, mul_inv_rev, inv_inv, ← mul_assoc, inv_mul_cancel, one_mul]
+          · have h_spec := ((h_aux ⟦w⟧).mpr rfl).choose_spec
+            simp only
+            rw [map_inv, h_spec, mul_inv_rev, inv_inv, ← mul_assoc, mul_inv_cancel, one_mul]
+        have h_claim : φ ((h_aux ⟦w⟧).mpr rfl).choose⁻¹ = (⟦w⟧ : G ⧸ φ.range).out⁻¹ * w := by
+          rw [map_inv, ((h_aux ⟦w⟧).mpr rfl).choose_spec, mul_inv_rev, inv_inv]
+        simp [Pi.single_apply, h_iff]
+        simp_rw [← map_inv, h_claim, map_mul]
+        -- ???
+        sorry
+      · apply Finset.sum_eq_zero fun g _ ↦ ?_
+        ext w
+        simp [Pi.single_apply, ← map_inv]
+        rintro rfl
+        calc
+          _ = ∑ x ∈ Finset.univ.map (Equiv.inv H).toEmbedding, (M.ρ (φ x)) (f (g.out * φ x)) := by
+            rw [Finset.sum_map]
+            rfl
+          _ = 0 := by
+            rw [Finset.map_univ_equiv, hf g.out]
+    -- have : ∃ (h : H) (x : G → M.V), ∀ g : G, f g = ((coind₁'.obj M ↓ φ).ρ h) x g - x g := by
+    --   -- became            ∃ h x, ∀ (g : G), f g = (M.ρ (φ h)) (x (g * φ h)) - x g
+    --   clear this
+    --   simp [coind₁']
+    apply Coinvariants.mem_ker_of_eq (_ : H) (_ : G → M.V) (f : G → M.V)
 
 instance trivialTateCohomology_ind₁AsFinsupp :
       TrivialtateCohomology (.of <| Representation.ind₁AsFinsupp R G A) := by
