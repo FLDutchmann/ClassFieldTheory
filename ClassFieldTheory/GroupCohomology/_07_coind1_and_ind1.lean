@@ -1,6 +1,7 @@
 import Mathlib
 import ClassFieldTheory.GroupCohomology._03_inflation
 import ClassFieldTheory.GroupCohomology._05_TrivialCohomology
+import ClassFieldTheory.Mathlib.LinearAlgebra.Finsupp.Defs
 
 /-!
 Let `G` be a group. We define two functors:
@@ -355,12 +356,11 @@ instance coind₁_trivialCohomology (A : ModuleCat R) : ((coind₁ G).obj A).Tri
 variable {G}
 
 def coind₁_quotientToInvariants_iso_aux1 {Q : Type} [Group Q] (φ : G →* Q) :
-    (invariants (MonoidHom.comp ((coind₁ G).obj A).ρ φ.ker.subtype)) ≃ₗ[R]
-    (coindV (⊥ : Subgroup (G ⧸ φ.ker)).subtype
-    ((trivialFunctor R (⊥ : Subgroup (G ⧸ φ.ker))).obj A).ρ) where
+    invariants (((coind₁ G).obj A).ρ.comp φ.ker.subtype) ≃ₗ[R]
+      coindV (⊥ : Subgroup (G ⧸ φ.ker)).subtype (trivial R (⊥ : Subgroup (G ⧸ φ.ker)) A).ρ where
   toFun x := ⟨Quotient.lift x.1.1 (fun a b hab ↦ by
     nth_rw 1 [← x.2 ⟨a⁻¹ * b, QuotientGroup.leftRel_apply.mp hab⟩]
-    simp), by simp [coindV, trivialFunctor]⟩
+    simp), by simp [coindV]⟩
   map_add' x y := by
     ext x
     induction x using QuotientGroup.induction_on
@@ -584,28 +584,28 @@ instance ind₁'_trivialHomology : TrivialHomology (ind₁'.obj M) :=
 
 variable (G) in
 /-- A version of `ind₁` that's actually defined as `G →₀ A` with some action. -/
-@[simps! V] def ind₁AsFinsupp : Rep R G := ind₁'.obj <| (trivialFunctor R G).obj A
+@[simps! V] def ind₁AsFinsupp : Rep R G := ind₁'.obj <| trivial R G A
 
 variable (G) in
 /-- A version of `coind₁` that's actually defined as `G → A` with some action. -/
-@[simps! V] def coind₁AsPi : Rep R G := coind₁'.obj <| (trivialFunctor R G).obj A
+@[simps! V] def coind₁AsPi : Rep R G := coind₁'.obj <| trivial R G A
 
 @[simp]
-lemma ind₁AsFinsupp_ρ (g : G) : (ind₁AsFinsupp G A).ρ g = lmapDomain _ _ (fun x ↦ x * g⁻¹) := by
-  simp [ind₁AsFinsupp, trivialFunctor]
+lemma ind₁AsFinsupp_ρ (g : G) :
+    (ind₁AsFinsupp G A).ρ g = (mapDomain.linearEquiv _ _ (Equiv.mulRight g).symm).toLinearMap := by
+  ext; simp [ind₁AsFinsupp, ind₁']
 
 -- TODO: Replace with `coind₁AsPi_ρ`. Currently can't be proved first for obscure reasons.
 @[simp]
 lemma coind₁AsPi_ρ_apply (g : G) (f : G → A) (x : G) : (coind₁AsPi G A).ρ g f x = f (x * g) := by
-  simp [coind₁AsPi, coind₁', trivialFunctor]
+  simp [coind₁AsPi, coind₁']
 
 @[simp]
 lemma coind₁AsPi_ρ (g : G) :
-    (coind₁AsPi G A).ρ g = (LinearEquiv.piCongrLeft R (fun _ ↦ A) <| (Equiv.mulRight g).symm).toLinearMap := by
+    (coind₁AsPi G A).ρ g = (LinearEquiv.funCongrLeft R A <| .mulRight g).toLinearMap := by
   simp only [coind₁AsPi_V]
   ext f x
   erw [coind₁AsPi_ρ_apply]
-  simp [LinearEquiv.piCongrLeft]
 
 /-- `ind₁AsFinsupp` is isomorphic to `ind₁` pointwise. -/
 def ind₁AsFinsuppIso : ind₁AsFinsupp G A ≅ (ind₁ G).obj A := ind₁'_obj_iso_ind₁ _
@@ -615,7 +615,7 @@ def coind₁AsPiIso : coind₁AsPi G A ≅ (coind₁ G).obj (.of R A) := coind�
 
 section FiniteGroup
 
-variable [DecidableEq G] (A : ModuleCat R)
+variable (A : ModuleCat R)
 set_option linter.unusedSectionVars false
 
 -- Hack:
@@ -710,7 +710,7 @@ noncomputable def iso_ind₁ :
       ((IsGalois.normalBasis K L).reindex (Equiv.inv (L ≃ₐ[K] L))).repr.symm) ?_
   intro x
   ext f
-  simp only [Rep.ind₁AsFinsupp_V, Rep.trivialFunctor_obj_V, LinearEquiv.toModuleIso_hom,
+  simp only [Rep.ind₁AsFinsupp_V, Rep.trivial, LinearEquiv.toModuleIso_hom,
     Basis.coe_repr_symm, Basis.coe_reindex, Equiv.inv_symm, Equiv.inv_apply, ModuleCat.hom_comp,
     ModuleCat.hom_ofHom, LinearMap.coe_comp, Function.comp_apply, RingHom.toMonoidHom_eq_coe,
     RingEquiv.toRingHom_eq_coe, MonoidHom.coe_comp, MonoidHom.coe_coe, RingHom.coe_coe,
@@ -721,7 +721,7 @@ noncomputable def iso_ind₁ :
   -- For strange reasons, the simp lemma `ind₁AsFinsupp_ρ` doesn't work here, so
   -- we unfold instead.
   unfold Rep.ind₁AsFinsupp
-  simp only [Rep.ind₁'_obj, Rep.trivialFunctor_obj_V, RingHom.toMonoidHom_eq_coe,
+  simp only [Rep.ind₁'_obj, Rep.trivial, RingHom.toMonoidHom_eq_coe,
     RingEquiv.toRingHom_eq_coe, MonoidHom.coe_comp, MonoidHom.coe_coe, RingHom.coe_coe,
     Function.comp_apply, Representation.ind₁'_apply, map_sum, map_smul]
   unfold ModuleCat.endRingEquiv
