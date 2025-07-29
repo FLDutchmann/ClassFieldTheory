@@ -7,7 +7,7 @@ variable (M R) in
 @[simp] lemma coe_lmapDomain (f : α → β) : ⇑(lmapDomain M R f) = mapDomain f := rfl
 
 -- TODO: Rename `mapDomain.linearEquiv`!
-@[simp, norm_cast] lemma toLinear_mapDomainLinearEquiv (e : α ≃ β) :
+@[simp, norm_cast] lemma toLinearMap_mapDomainLinearEquiv (e : α ≃ β) :
     mapDomain.linearEquiv M R e = lmapDomain M R e := rfl
 
 -- TODO: Rename `mapDomain.linearEquiv`!

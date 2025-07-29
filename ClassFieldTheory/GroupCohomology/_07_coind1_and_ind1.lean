@@ -102,7 +102,36 @@ abbrev ind₁ := ind (⊥ : Subgroup G).subtype (trivial R _ V)
 lemma ind₁_apply (g x : G) : (ind₁ R G V) g ∘ₗ Ind₁V.mk R G V x = Ind₁V.mk R G V (x * g⁻¹) := by
   ext; simp
 
+/-- A version of `ind₁` that's actually defined as an action on `G →₀ A`. -/
+def ind₁AsFinsupp : Representation R G (G →₀ V) where
+  toFun g := (mapDomain.linearEquiv _ _ <| .symm <| .mulRight g).toLinearMap
+  map_one' := by simp [Module.End.one_eq_id]
+  map_mul' := by simp [Module.End.mul_eq_comp, -Equiv.mulRight_mul, ← Finsupp.lmapDomain_comp]
+
+/-- A version of `coind₁` that's actually defined as `G → A` with some action. -/
+def coind₁AsPi : Representation R G (G → V) where
+  toFun g := (LinearEquiv.funCongrLeft _ _ <| .mulRight g).toLinearMap
+  map_one' := by simp [Module.End.one_eq_id, Equiv.Perm.one_def]
+  map_mul' := by simp [Module.End.mul_eq_comp, Equiv.Perm.mul_def]
+
 variable {R G V} (ρ : Representation R G V)
+
+@[simp] lemma ind₁AsFinsupp_single (g x : G) (v : V) :
+    ind₁AsFinsupp R G V g (.single x v) = .single (x * g⁻¹) v := by simp [ind₁AsFinsupp]
+
+@[simp] lemma coind₁AsPi_single [DecidableEq G] (g x : G) (v : V) :
+    coind₁AsPi R G V g (Pi.single x v) = Pi.single (x * g⁻¹) v := by
+  ext
+  simp [coind₁AsPi, LinearMap.funLeft, Function.comp_def, Pi.single, Function.update,
+    eq_mul_inv_iff_mul_eq]
+
+@[simp]
+lemma ind₁AsFinsupp_apply (g : G) (f : G →₀ V) (x : G) :
+    ind₁AsFinsupp R G V g f x = f (x * g) := by
+  simp [ind₁AsFinsupp, -toLinearMap_mapDomainLinearEquiv]
+
+@[simp]
+lemma coind₁AsPi_apply (g : G) (f : G → V) (x : G) : coind₁AsPi R G V g f x = f (x * g) := rfl
 
 /--
 Given a representation `ρ` of `G` on `V`, `coind₁' ρ` is the representation of `G`
@@ -539,34 +568,36 @@ def ind₁'_obj_iso_ind₁ : ind₁'.obj M ≅ (ind₁ G).obj M.V :=
 
 variable (G) in
 /-- A version of `ind₁` that's actually defined as `G →₀ A` with some action. -/
-@[simps! V] def ind₁AsFinsupp : Rep R G := ind₁'.obj <| trivial R G A
+abbrev ind₁AsFinsupp : Rep R G := .of <| Representation.ind₁AsFinsupp R G A
 
 variable (G) in
 /-- A version of `coind₁` that's actually defined as `G → A` with some action. -/
-@[simps! V] def coind₁AsPi : Rep R G := coind₁'.obj <| trivial R G A
+abbrev coind₁AsPi : Rep R G := .of <| Representation.coind₁AsPi R G A
 
-@[simp]
-lemma ind₁AsFinsupp_ρ (g : G) :
-    (ind₁AsFinsupp G A).ρ g = (mapDomain.linearEquiv _ _ (Equiv.mulRight g).symm).toLinearMap := by
-  ext; simp [ind₁AsFinsupp, ind₁']
+-- @[simp]
+-- lemma ind₁AsFinsupp_ρ (g : G) :
+--     (ind₁AsFinsupp G A).ρ g = (mapDomain.linearEquiv _ _ (Equiv.mulRight g).symm).toLinearMap := by
+--   ext; simp [ind₁AsFinsupp, ind₁']
 
--- TODO: Replace with `coind₁AsPi_ρ`. Currently can't be proved first for obscure reasons.
-@[simp]
-lemma coind₁AsPi_ρ_apply (g : G) (f : G → A) (x : G) : (coind₁AsPi G A).ρ g f x = f (x * g) := by
-  simp [coind₁AsPi, coind₁']
+-- -- TODO: Replace with `coind₁AsPi_ρ`. Currently can't be proved first for obscure reasons.
+-- @[simp]
+-- lemma coind₁AsPi_ρ_apply (g : G) (f : G → A) (x : G) : (coind₁AsPi G A).ρ g f x = f (x * g) := by
+--   simp [coind₁AsPi, coind₁']
 
-@[simp]
-lemma coind₁AsPi_ρ (g : G) :
-    (coind₁AsPi G A).ρ g = (LinearEquiv.funCongrLeft R A <| .mulRight g).toLinearMap := by
-  simp only [coind₁AsPi_V]
-  ext f x
-  erw [coind₁AsPi_ρ_apply]
+-- @[simp]
+-- lemma coind₁AsPi_ρ (g : G) :
+--     (coind₁AsPi G A).ρ g = (LinearEquiv.funCongrLeft R A <| .mulRight g).toLinearMap := by
+--   simp only [coind₁AsPi_V]
+--   ext f x
+--   erw [coind₁AsPi_ρ_apply]
 
 /-- `ind₁AsFinsupp` is isomorphic to `ind₁` pointwise. -/
-def ind₁AsFinsuppIso : ind₁AsFinsupp G A ≅ (ind₁ G).obj A := ind₁'_obj_iso_ind₁ _
+def ind₁AsFinsuppIso : ind₁AsFinsupp G A ≅ (ind₁ G).obj A :=
+  sorry -- ind₁'_obj_iso_ind₁ _
 
 /-- `coind₁AsPi` is isomorphic to `coind₁` pointwise. -/
-def coind₁AsPiIso : coind₁AsPi G A ≅ (coind₁ G).obj (.of R A) := coind₁'_obj_iso_coind₁ _
+def coind₁AsPiIso : coind₁AsPi G A ≅ (coind₁ G).obj (.of R A) :=
+  sorry -- coind₁'_obj_iso_coind₁ _
 
 section FiniteGroup
 
@@ -642,7 +673,7 @@ noncomputable def iso_ind₁ :
       ((IsGalois.normalBasis K L).reindex (Equiv.inv (L ≃ₐ[K] L))).repr.symm) ?_
   intro x
   ext f
-  simp only [Rep.ind₁AsFinsupp_V, Rep.trivial, LinearEquiv.toModuleIso_hom,
+  simp only [LinearEquiv.toModuleIso_hom,
     Basis.coe_repr_symm, Basis.coe_reindex, Equiv.inv_symm, Equiv.inv_apply, ModuleCat.hom_comp,
     ModuleCat.hom_ofHom, LinearMap.coe_comp, Function.comp_apply, RingHom.toMonoidHom_eq_coe,
     RingEquiv.toRingHom_eq_coe, MonoidHom.coe_comp, MonoidHom.coe_coe, RingHom.coe_coe,
@@ -650,18 +681,12 @@ noncomputable def iso_ind₁ :
   rw [Finsupp.linearCombination_apply, Finsupp.linearCombination_apply,
     Finsupp.sum_fintype _ _ (fun i => by exact zero_smul K _),
     Finsupp.sum_fintype _ _ (fun i => by exact zero_smul K _)]
-  -- For strange reasons, the simp lemma `ind₁AsFinsupp_ρ` doesn't work here, so
-  -- we unfold instead.
-  unfold Rep.ind₁AsFinsupp
-  simp only [Rep.ind₁'_obj, Rep.trivial, RingHom.toMonoidHom_eq_coe,
-    RingEquiv.toRingHom_eq_coe, MonoidHom.coe_comp, MonoidHom.coe_coe, RingHom.coe_coe,
-    Function.comp_apply, Representation.ind₁'_apply, map_sum, map_smul]
+  simp only [Function.comp_apply, map_sum, map_smul]
   unfold ModuleCat.endRingEquiv
-  simp only [RingEquiv.symm_mk, RingEquiv.coe_mk, Equiv.coe_fn_mk, ModuleCat.ofHom_comp,
-    ModuleCat.hom_comp, ModuleCat.hom_ofHom, LinearMap.coe_comp, Function.comp_apply,
-    Finsupp.mapRange.linearMap_apply, Finsupp.lmapDomain_apply]
+  simp only [RingEquiv.symm_mk, RingEquiv.coe_mk, Equiv.coe_fn_mk, ModuleCat.hom_ofHom]
   apply Fintype.sum_equiv (Equiv.mulRight x)
   intro y
+  stop
   rw [Finsupp.mapDomain_mapRange _ _ _ _ (fun _ _ => rfl), Finsupp.mapRange_apply]
   simp only [Equiv.coe_mulRight, mul_inv_rev]
   rw [IsGalois.normalBasis_apply y⁻¹, IsGalois.normalBasis_apply (x⁻¹ * y⁻¹)]

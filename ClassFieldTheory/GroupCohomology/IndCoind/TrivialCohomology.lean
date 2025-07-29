@@ -22,6 +22,8 @@ trivial cohomology. In the case that `G` is a finite group, we show that all fou
 representations have trivial Tate cohomology.
 -/
 
+noncomputable section
+
 open
   Finsupp
   Rep
@@ -29,11 +31,8 @@ open
   groupHomology
   groupCohomology
 
-noncomputable section
-
-variable {R G S A : Type} [CommRing R] [Group G] [Group S] {M : Rep R G} {A : ModuleCat R}
-
-namespace Rep
+section FINDMEINMATHLIB
+variable {G S : Type} [Group G] [Group S]
 
 @[simps snd]
 /- a coset decomposition of x, acording -/
@@ -71,13 +70,19 @@ lemma cosetDec_inj {S : Type} [Group S] (φ : S →* G) (sec : G ⧸ φ.range �
 
 @[simps]
 def prodQuotEquiv {φ : S →* G} (hφ : Function.Injective φ) (sec : G ⧸ φ.range → G)
-    (sec_spec : ∀ g, sec g = g) :  S × G ⧸ φ.range ≃ G where
+    (sec_spec : ∀ g, sec g = g) : S × G ⧸ φ.range ≃ G where
   toFun p := sec p.2 * φ p.1
   invFun h := cosetDec φ sec sec_spec h
   left_inv p := by simp only [cosetDec_inj, hφ]
-  right_inv h := by simp [-Rep.cosetDec_snd, cosetDecSpec]
+  right_inv h := by simp [-cosetDec_snd, cosetDecSpec]
 
-def resInd₁AsFinsuppModuleIso  (φ : S →* G) (hφ : Function.Injective φ) (sec : G ⧸ φ.range → G)
+end FINDMEINMATHLIB
+
+variable {R G S A : Type} [CommRing R] [Group G] [Group S] {M : Rep R G} {A : ModuleCat R}
+
+namespace Rep
+
+def resInd₁AsFinsuppModuleIso (φ : S →* G) (hφ : Function.Injective φ) (sec : G ⧸ φ.range → G)
     (hsec : ∀ g, sec g = g) :
     (G →₀ A) ≃ₗ[R] (S →₀ (G ⧸ φ.range →₀ A)) :=
   open scoped Classical in
@@ -100,23 +105,15 @@ theorem resCoind₁AsPiModuleIso_apply {φ : S →* G} (hφ : Function.Injective
 
 def resInd₁AsFinsuppIso (φ : S →* G) (hφ : Function.Injective φ) (sec : G ⧸ φ.range → G)
     (hsec : ∀ g, sec g = g) :
-    ind₁AsFinsupp G A ↓ φ ≅ ind₁AsFinsupp S (.of R <| G ⧸ φ.range →₀ A) := by
-  refine Rep.mkIso _ _ (resInd₁AsFinsuppModuleIso φ hφ sec hsec).toModuleIso ?_
-  rintro g f
-  simp
-  ext s h
-  erw [ind₁AsFinsupp_ρ, ind₁AsFinsupp_ρ, coe_mapDomainLinearEquiv, coe_mapDomainLinearEquiv]
-  simp [resInd₁AsFinsuppModuleIso, mul_assoc]
+    ind₁AsFinsupp G A ↓ φ ≅ ind₁AsFinsupp S (.of R <| G ⧸ φ.range →₀ A) :=
+  Rep.mkIso _ _ (resInd₁AsFinsuppModuleIso φ hφ sec hsec).toModuleIso fun g f ↦ by
+    ext; simp [mul_assoc]
 
 def resCoind₁AsPiIso (φ : S →* G) (hφ : Function.Injective φ) (sec : G ⧸ φ.range → G)
     (hsec : ∀ g, sec g = g) :
-    coind₁AsPi G A ↓ φ ≅ coind₁AsPi S (.of R <| G ⧸ φ.range → A) := by
-  refine Rep.mkIso _ _ (resCoind₁AsPiModuleIso φ hφ sec hsec).toModuleIso ?_
-  rintro g f
-  simp
-  ext s h
-  erw [coind₁AsPi_ρ, coind₁AsPi_ρ, LinearEquiv.coe_toLinearMap, LinearEquiv.coe_toLinearMap]
-  simp [resCoind₁AsPiModuleIso, mul_assoc]
+    coind₁AsPi G A ↓ φ ≅ coind₁AsPi S (.of R <| G ⧸ φ.range → A) :=
+  Rep.mkIso _ _ (resCoind₁AsPiModuleIso φ hφ sec hsec).toModuleIso fun g f ↦ by
+    ext; simp [mul_assoc]
 
 instance trivialHomology_ind₁AsFinsupp : TrivialHomology (ind₁AsFinsupp G A) := by
   classical
@@ -168,7 +165,8 @@ instance trivialHomology_coind₁' : TrivialCohomology (coind₁'.obj M) :=
 instance trivialCohomology_ind₁AsFinsupp : TrivialCohomology (ind₁AsFinsupp G A) :=
   .of_iso (ind₁AsFinsuppIso _)
 
-instance trivialTateCohomology_ind₁AsFinsupp : TrivialtateCohomology (ind₁AsFinsupp G A) := by
+instance trivialTateCohomology_ind₁AsFinsupp :
+      TrivialtateCohomology (.of <| Representation.ind₁AsFinsupp R G A) := by
     refine .of_cases ?_
     rintro H _ _ φ hφ
     have := Finite.of_injective φ hφ
@@ -183,9 +181,13 @@ instance trivialTateCohomology_ind₁AsFinsupp : TrivialtateCohomology (ind₁As
       rintro f hf
       have : Finite <| G ⧸ S := Subgroup.finite_quotient_of_finiteIndex
       have : Fintype <| G ⧸ S := .ofFinite _
-      use ∑ x : G ⧸ S, single (Quotient.out x) (f (Quotient.out x))
+      use ∑ x : G ⧸ S, single x.out (f x.out)
       ext g
       simp [Representation.norm]
+
+
+
+
       stop
       rw [← Finset.sum_comm]
       simp_rw [Finsupp.coe_finset_sum, Finset.sum_apply]
