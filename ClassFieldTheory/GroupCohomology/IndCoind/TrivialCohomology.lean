@@ -162,10 +162,14 @@ instance trivialHomology_coind₁' : TrivialHomology (coind₁'.obj M) :=
 instance trivialCohomology_ind₁AsFinsupp : TrivialCohomology (ind₁AsFinsupp G A) :=
   .of_iso (ind₁AsFinsuppIso _)
 
+instance trivialHomology_coind₁AsPi : TrivialHomology (coind₁AsPi G A) :=
+  .of_iso (coind₁AsPiIso _)
+
 unif_hint {H : Type} [Group H] (φ : H →* G) where ⊢
   ↑(coind₁'.obj M ↓ φ).V ≟ G → M.V
 
-instance coind₁_trivialTateCohomology [Finite G] [DecidableEq G] : TrivialtateCohomology (coind₁'.obj M) := by
+instance coind₁AsPi_trivialTateCohomology [Finite G] [DecidableEq G] :
+    TrivialtateCohomology (Rep.coind₁AsPi G A) := by
   -- convert Rep.TrivialTateCohomology.of_iso (coind₁'_obj_iso_coind₁ M)
   apply TrivialtateCohomology.of_cases
   intro H _ _ φ hφ
@@ -182,11 +186,11 @@ instance coind₁_trivialTateCohomology [Finite G] [DecidableEq G] : Trivialtate
     apply SetLike.coe_injective
     simp_rw [Submodule.comap_coe, Submodule.coe_subtype, Submodule.top_coe,
       Set.preimage_eq_univ_iff, Subtype.range_coe_subtype, Representation.mem_invariants]
-    intro (f : G → M.V) (hf : ∀ h : H, _)
+    intro (f : G → A) (hf : ∀ h : H, _)
     -- TODO: rename range_coe to coe_range
     simp_rw [res_obj_ρ, LinearMap.range_coe, Set.mem_range]
     use ∑ g : G ⧸ φ.range, Pi.single g.out (f g.out), ?_
-    change (_ : G → M.V) = _
+    change (_ : G → A) = _
     ext x
     have h_aux (g : G ⧸ φ.range) : x⁻¹ * g.out ∈ Set.range φ ↔ ⟦x⟧ = g := by
       trans x⁻¹ * g.out ∈ φ.range
@@ -198,14 +202,12 @@ instance coind₁_trivialTateCohomology [Finite G] [DecidableEq G] : Trivialtate
         rw [← Subgroup.inv_mem_iff, mul_inv_rev, inv_inv, ← QuotientGroup.leftRel_apply]
         apply Quotient.mk_out
     calc
-      _ = ∑ g : G ⧸ φ.range, ∑ s : H, (M.ρ (φ s)) (if x * φ s = g.out then f g.out else 0) := by
-        simp [Representation.norm, coind₁', Pi.single_apply]
-      _ = ∑ g : G ⧸ φ.range, ∑ s ∈ Finset.univ.map ⟨φ, hφ⟩, (if s = x⁻¹ * g.out then M.ρ s (f g.out) else 0) := by
+      _ = ∑ g : G ⧸ φ.range, ∑ s : H, (if x * φ s = g.out then f g.out else 0) := by
+        simp [Representation.norm, Pi.single_apply]
+        simp_rw [eq_mul_inv_iff_mul_eq]
+      _ = ∑ g : G ⧸ φ.range, ∑ s ∈ Finset.univ.map ⟨φ, hφ⟩, (if s = x⁻¹ * g.out then f g.out else 0) := by
         simp_rw [Finset.sum_map, eq_inv_mul_iff_mul_eq, Function.Embedding.coeFn_mk]
-        apply Finset.sum_congr rfl fun g _ ↦ ?_
-        apply Finset.sum_congr rfl fun s _ ↦ ?_
-        split_ifs <;> simp
-      _ = ∑ g : G ⧸ φ.range, ∑ s : G, (if s = x⁻¹ * g.out then if s ∈ Set.range φ then M.ρ s (f g.out) else 0 else 0) := by
+      _ = ∑ g : G ⧸ φ.range, ∑ s : G, (if s = x⁻¹ * g.out then if s ∈ Set.range φ then f g.out else 0 else 0) := by
         apply Finset.sum_congr rfl fun g _ ↦ ?_
         nth_rw 1 [← Finset.univ_inter (Finset.univ.map ⟨φ, hφ⟩)]
         simp_rw [← ite_and, ← Finset.sum_ite_mem, Finset.mem_map, Finset.mem_univ,
@@ -216,93 +218,79 @@ instance coind₁_trivialTateCohomology [Finite G] [DecidableEq G] : Trivialtate
         convert Finset.sum_ite_eq' _ _ _
         simp_rw [Finset.mem_univ, ite_true]
         replace hf := fun h ↦ congrFun (hf h)
-        simp_rw [coind₁'_obj, res_ρ_apply, of_ρ, Representation.coind₁', MonoidHom.coe_mk,
-          OneHom.coe_mk, Action.res_obj_V, LinearMap.coe_mk, AddHom.coe_mk] at hf
-        have (g : G) (hg : g ∈ φ.range) (a : G) : (M.ρ g) (f (a * g)) = f a := by
+        have (g : G) (hg : g ∈ φ.range) (a : G) : f (a * g) = f a := by
           obtain ⟨h, rfl⟩ := hg
           simpa using hf h a
         convert (this (x⁻¹ * ⟦x⟧.out) ?_ x).symm
-        · simp
+        · simp; rfl
         · apply (h_aux _).mpr rfl
-  ·
-    refine Limits.IsZero.of_iso ?_ (tateCohomology.negOneIso _)
+  · refine Limits.IsZero.of_iso ?_ (tateCohomology.negOneIso _)
     convert @ModuleCat.isZero_of_subsingleton _ _ _ ?_
     apply Submodule.subsingleton_quotient_iff_eq_top.mpr
     rw [Submodule.submoduleOf]
     apply SetLike.coe_injective
     simp_rw [Submodule.comap_coe, Submodule.coe_subtype, Submodule.top_coe,
       Set.preimage_eq_univ_iff, Subtype.range_coe_subtype, LinearMap.mem_ker]
-    intro (f : G → M.V) (hf : (coind₁'.obj M ↓ φ).ρ.norm f = (0 : G → M.V))
+    intro (f : G → A) (hf : (coind₁AsPi G A ↓ φ).ρ.norm f = (0 : G → A))
     replace hf := fun g ↦ congrFun hf g
-    simp_rw [Representation.norm, res_ρ_apply, coind₁', of_ρ,
-      Representation.coind₁', Pi.zero_apply, Action.res_obj_V, MonoidHom.coe_mk,
-      OneHom.coe_mk, LinearMap.coeFn_sum, LinearMap.coe_mk, AddHom.coe_mk, Finset.sum_apply] at hf
+    simp_rw [Representation.norm, res_ρ_apply, coind₁AsPi, of_ρ,
+      Representation.coind₁AsPi, Pi.zero_apply, Action.res_obj_V, MonoidHom.coe_mk,
+      OneHom.coe_mk, LinearMap.coeFn_sum, Finset.sum_apply, LinearEquiv.coe_coe,
+      LinearEquiv.funCongrLeft_apply, Equiv.coe_mulRight, LinearMap.funLeft_apply] at hf
 
-    -- Testing playground (should comment out)
-    have f'_parts : (G ⧸ φ.range) → H → (G → M.V) := sorry
-    let f'_sum : G → M.V := ∑ g, ∑ h, f'_parts g h
-    have h : H := sorry
-    apply Representation.Coinvariants.mem_ker_of_eq h f'_sum f ?_
-    ext g
-    simp [coind₁', Representation.coind₁', f'_sum]
+    -- each single "piece" is in the kernel
+    have part (g : (G ⧸ φ.range) × H) : _ ∈ Representation.Coinvariants.ker (coind₁AsPi G A ↓ φ).ρ :=
+      Representation.Coinvariants.sub_mem_ker g.snd (Pi.single g.fst.out (f (g.fst.out * (φ g.snd)⁻¹)) : G → A)
+    conv at part =>
+      enter [g, 2]
+      rw [res_obj_ρ, of_ρ, MonoidHom.coe_comp, Function.comp_apply, Representation.coind₁AsPi_single]
+    change f ∈ Representation.Coinvariants.ker _
+    rw [Representation.Coinvariants.ker]
+    -- then their sum is in the kernel!
+    convert Submodule.sum_mem _ (t := Finset.univ) (fun g _ ↦ part g)
 
-    -- "The sum of the values of f over each coset of H is zero"
-    -- have h_coset (g : G ⧸ φ.range) : ∑ s : H, ∑ c, (M.ρ (φ s)) (f (g * φ s)) = 0
-    -- f g = (M.ρ (φ h)) (f' (g * φ h)) - f' g
-    -- This isn't correct right now lol
-    have :
-        f = ∑ g : G ⧸ φ.range, ∑ s : H,
-          (Pi.single (g.out * φ s) ((M.ρ (φ s)) (f g.out))
-            - Pi.single g.out ((M.ρ (φ s)⁻¹) (f (g.out * (φ s)⁻¹)))) := by
-      simp_rw [Finset.sum_sub_distrib]
-      convert (sub_zero f).symm
-      · rw [← Finset.sum_product', Finset.univ_product_univ]
-        ext w
-        have h_aux (g : G ⧸ φ.range) : w⁻¹ * g.out ∈ Set.range φ ↔ ⟦w⟧ = g := by
-          change w⁻¹ * g.out ∈ φ.range ↔ _
-          constructor <;> intro h
-          · apply Quotient.mk_eq_iff_out.mpr (_ : QuotientGroup.leftRel _ _ _)
-            rwa [QuotientGroup.leftRel_apply]
-          · subst h
-            rw [← Subgroup.inv_mem_iff, mul_inv_rev, inv_inv, ← QuotientGroup.leftRel_apply]
-            apply Quotient.mk_out
-        have h_iff (x : (G ⧸ φ.range) × H) :
-            w = x.fst.out * φ x.snd ↔ x = (⟦w⟧, ((h_aux ⟦w⟧).mpr rfl).choose⁻¹) := by
-          constructor <;> rintro rfl
-          · have h_quo : ⟦x.fst.out * φ x.snd⟧ = x.fst := by
-              apply Quotient.mk_eq_iff_out.mpr (_ : QuotientGroup.leftRel _ _ _)
-              rw [QuotientGroup.leftRel_apply, mul_inv_rev, mul_assoc, inv_mul_cancel,
-                mul_one, ← map_inv]
-              use x.snd⁻¹
-            ext <;> simp only
-            · exact h_quo.symm
-            · apply hφ
-              simp_rw [map_inv, ((h_aux ⟦x.fst.out * φ x.snd⟧).mpr rfl).choose_spec,
-                h_quo, mul_inv_rev, inv_inv, ← mul_assoc, inv_mul_cancel, one_mul]
-          · have h_spec := ((h_aux ⟦w⟧).mpr rfl).choose_spec
-            simp only
-            rw [map_inv, h_spec, mul_inv_rev, inv_inv, ← mul_assoc, mul_inv_cancel, one_mul]
-        have h_claim : φ ((h_aux ⟦w⟧).mpr rfl).choose⁻¹ = (⟦w⟧ : G ⧸ φ.range).out⁻¹ * w := by
-          rw [map_inv, ((h_aux ⟦w⟧).mpr rfl).choose_spec, mul_inv_rev, inv_inv]
-        simp [Pi.single_apply, h_iff]
-        simp_rw [← map_inv, h_claim, map_mul]
-        -- ???
-        sorry
-      · apply Finset.sum_eq_zero fun g _ ↦ ?_
-        ext w
-        simp [Pi.single_apply, ← map_inv]
-        rintro rfl
-        calc
-          _ = ∑ x ∈ Finset.univ.map (Equiv.inv H).toEmbedding, (M.ρ (φ x)) (f (g.out * φ x)) := by
-            rw [Finset.sum_map]
-            rfl
-          _ = 0 := by
-            rw [Finset.map_univ_equiv, hf g.out]
-    -- have : ∃ (h : H) (x : G → M.V), ∀ g : G, f g = ((coind₁'.obj M ↓ φ).ρ h) x g - x g := by
-    --   -- became            ∃ h x, ∀ (g : G), f g = (M.ρ (φ h)) (x (g * φ h)) - x g
-    --   clear this
-    --   simp [coind₁']
-    -- apply Coinvariants.mem_ker_of_eq (_ : H) (_ : G → M.V) (f : G → M.V)
+    ext w
+    rw [Finset.sum_apply]
+    simp_rw [Pi.sub_apply, Finset.sum_sub_distrib]
+    convert (sub_zero (f w)).symm
+    · have h_aux (g : G ⧸ φ.range) : w⁻¹ * g.out ∈ Set.range φ ↔ ⟦w⟧ = g := by
+        change w⁻¹ * g.out ∈ φ.range ↔ _
+        constructor <;> intro h
+        · apply Quotient.mk_eq_iff_out.mpr (_ : QuotientGroup.leftRel _ _ _)
+          rwa [QuotientGroup.leftRel_apply]
+        · subst h
+          rw [← Subgroup.inv_mem_iff, mul_inv_rev, inv_inv, ← QuotientGroup.leftRel_apply]
+          apply Quotient.mk_out
+      have h_iff (x : (G ⧸ φ.range) × H) :
+          w = x.fst.out * (φ x.snd)⁻¹ ↔ x = (⟦w⟧, ((h_aux ⟦w⟧).mpr rfl).choose) := by
+        constructor <;> rintro rfl
+        · have h_quo : ⟦x.fst.out * (φ x.snd)⁻¹⟧ = x.fst := by
+            apply Quotient.mk_eq_iff_out.mpr (_ : QuotientGroup.leftRel _ _ _)
+            rw [QuotientGroup.leftRel_apply, mul_inv_rev, mul_assoc, inv_mul_cancel,
+              mul_one, inv_inv]
+            use x.snd
+          ext <;> simp only
+          · exact h_quo.symm
+          · apply hφ
+            simp_rw [((h_aux ⟦x.fst.out * (φ x.snd)⁻¹⟧).mpr rfl).choose_spec,
+              h_quo, mul_inv_rev, inv_inv, mul_assoc, inv_mul_cancel, mul_one]
+        · have h_spec := ((h_aux ⟦w⟧).mpr rfl).choose_spec
+          simp only
+          rw [h_spec, mul_inv_rev, inv_inv, ← mul_assoc, mul_inv_cancel, one_mul]
+      have h_claim : φ ((h_aux ⟦w⟧).mpr rfl).choose⁻¹ = (⟦w⟧ : G ⧸ φ.range).out⁻¹ * w := by
+        rw [map_inv, ((h_aux ⟦w⟧).mpr rfl).choose_spec, mul_inv_rev, inv_inv]
+      simp [Pi.single_apply, h_iff]
+      simp_rw [← map_inv, h_claim, ← mul_assoc, mul_inv_cancel, one_mul]
+    · rw [Fintype.sum_prod_type]
+      apply Finset.sum_eq_zero fun g _ ↦ ?_
+      simp [Pi.single_apply, ← map_inv]
+      rintro rfl
+      calc
+        _ = ∑ x ∈ Finset.univ.map (Equiv.inv H).toEmbedding, f (g.out * φ x) := by
+          rw [Finset.sum_map]
+          rfl
+        _ = 0 := by
+          rw [Finset.map_univ_equiv, hf g.out]
 
 instance trivialTateCohomology_ind₁ : TrivialtateCohomology ((ind₁ G).obj A) := by
     refine .of_cases ?_
