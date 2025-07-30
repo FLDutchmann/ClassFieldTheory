@@ -156,14 +156,74 @@ instance trivialCohomology_ind₁ : TrivialCohomology ((ind₁ G).obj A) :=
 instance trivialHomology_coind₁ : TrivialHomology ((coind₁ G).obj A) :=
   .of_iso (ind₁_obj_iso_coind₁_obj A).symm
 
-instance trivialCohomology_ind₁' : TrivialCohomology (ind₁'.obj M) :=
-  .of_iso (ind₁'_obj_iso_ind₁ M)
-
-instance trivialHomology_coind₁' : TrivialCohomology (coind₁'.obj M) :=
+instance trivialHomology_coind₁' : TrivialHomology (coind₁'.obj M) :=
   .of_iso (coind₁'_obj_iso_coind₁ M)
 
 instance trivialCohomology_ind₁AsFinsupp : TrivialCohomology (ind₁AsFinsupp G A) :=
   .of_iso (ind₁AsFinsuppIso _)
+
+unif_hint {H : Type} [Group H] (φ : H →* G) where ⊢
+  ↑(coind₁'.obj M ↓ φ).V ≟ G → M.V
+
+instance coind₁_trivialTateCohomology [Finite G] [DecidableEq G] : TrivialTateCohomology (coind₁'.obj M) := by
+  -- convert Rep.TrivialTateCohomology.of_iso (coind₁'_obj_iso_coind₁ M)
+  apply TrivialTateCohomology.of_cases
+  intro H _ _ φ hφ
+  letI : Fintype G := Fintype.ofFinite _
+  letI : Fintype H := @Fintype.ofFinite _ <| Finite.of_injective _ hφ
+  letI : Fintype (G ⧸ φ.range) := @Fintype.ofFinite _ <| Subgroup.finite_quotient_of_finiteIndex
+  constructor
+  · stop
+    refine IsZero.of_iso ?_ (tateCohomology.zeroIso _)
+    convert @ModuleCat.isZero_of_subsingleton _ _ _ ?_
+    apply Submodule.subsingleton_quotient_iff_eq_top.mpr
+    rw [Submodule.submoduleOf]
+    -- convert Submodule.comap_top _; swap; infer_instance
+    apply SetLike.coe_injective
+    simp_rw [Submodule.comap_coe, Submodule.coe_subtype, Submodule.top_coe,
+      Set.preimage_eq_univ_iff, Subtype.range_coe_subtype, mem_invariants]
+    intro (f : G → M.V) (hf : ∀ h : H, _)
+    -- TODO: rename range_coe to coe_range
+    simp_rw [res_obj_ρ, LinearMap.range_coe, Set.mem_range]
+    use ∑ g : G ⧸ φ.range, Pi.single g.out (f g.out), ?_
+    change (_ : G → M.V) = _
+    ext x
+    have h_aux (g : G ⧸ φ.range) : x⁻¹ * g.out ∈ Set.range φ ↔ ⟦x⟧ = g := by
+      trans x⁻¹ * g.out ∈ φ.range
+      · simp
+      constructor <;> intro h
+      · apply Quotient.mk_eq_iff_out.mpr (_ : QuotientGroup.leftRel _ _ _)
+        rwa [QuotientGroup.leftRel_apply]
+      · subst h
+        rw [← Subgroup.inv_mem_iff, mul_inv_rev, inv_inv, ← QuotientGroup.leftRel_apply]
+        apply Quotient.mk_out
+    calc
+      _ = ∑ g : G ⧸ φ.range, ∑ s : H, (M.ρ (φ s)) (if x * φ s = g.out then f g.out else 0) := by
+        simp [Representation.norm, coind₁', Pi.single_apply]
+      _ = ∑ g : G ⧸ φ.range, ∑ s ∈ Finset.univ.map ⟨φ, hφ⟩, (if s = x⁻¹ * g.out then M.ρ s (f g.out) else 0) := by
+        simp_rw [Finset.sum_map, eq_inv_mul_iff_mul_eq, Function.Embedding.coeFn_mk]
+        apply Finset.sum_congr rfl fun g _ ↦ ?_
+        apply Finset.sum_congr rfl fun s _ ↦ ?_
+        split_ifs <;> simp
+      _ = ∑ g : G ⧸ φ.range, ∑ s : G, (if s = x⁻¹ * g.out then if s ∈ Set.range φ then M.ρ s (f g.out) else 0 else 0) := by
+        apply Finset.sum_congr rfl fun g _ ↦ ?_
+        nth_rw 1 [← Finset.univ_inter (Finset.univ.map ⟨φ, hφ⟩)]
+        simp_rw [← ite_and, ← Finset.sum_ite_mem, Finset.mem_map, Finset.mem_univ,
+          true_and, Function.Embedding.coeFn_mk, ← ite_and, Set.mem_range, and_comm]
+      _ = _ := by
+        simp_rw [Finset.sum_ite_eq', Finset.mem_univ, ite_true]
+        conv_lhs => enter [2, g, 1]; rw [h_aux, eq_comm]
+        convert Finset.sum_ite_eq' _ _ _
+        simp_rw [Finset.mem_univ, ite_true]
+        replace hf := fun h ↦ congrFun (hf h)
+        simp_rw [coind₁'_obj, res_ρ_apply, of_ρ, Representation.coind₁', MonoidHom.coe_mk,
+          OneHom.coe_mk, Action.res_obj_V, LinearMap.coe_mk, AddHom.coe_mk] at hf
+        have (g : G) (hg : g ∈ φ.range) (a : G) : (M.ρ g) (f (a * g)) = f a := by
+          obtain ⟨h, rfl⟩ := hg
+          simpa using hf h a
+        convert (this (x⁻¹ * ⟦x⟧.out) ?_ x).symm
+        · simp
+        · apply (h_aux _).mpr rfl
 
 instance trivialTateCohomology_ind₁AsFinsupp :
       TrivialtateCohomology (.of <| Representation.ind₁AsFinsupp R G A) := by
