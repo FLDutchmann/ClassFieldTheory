@@ -177,8 +177,7 @@ instance coind₁AsPi_trivialTateCohomology [Finite G] [DecidableEq G] :
   letI : Fintype H := @Fintype.ofFinite _ <| Finite.of_injective _ hφ
   letI : Fintype (G ⧸ φ.range) := @Fintype.ofFinite _ <| Subgroup.finite_quotient_of_finiteIndex
   constructor
-  · stop
-    refine Limits.IsZero.of_iso ?_ (tateCohomology.zeroIso _)
+  · refine Limits.IsZero.of_iso ?_ (tateCohomology.zeroIso _)
     convert @ModuleCat.isZero_of_subsingleton _ _ _ ?_
     apply Submodule.subsingleton_quotient_iff_eq_top.mpr
     rw [Submodule.submoduleOf]
